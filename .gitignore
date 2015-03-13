@@ -27,3 +27,10 @@
 *.i*86
 *.x86_64
 *.hex
+data/latestValues.csv
+sensor_runner
+data/sensor_stats.db
+sensors.sublime-project
+sensors.sublime-workspace
+._.DS_Store
+sensor_libraries/._.DS_Store
