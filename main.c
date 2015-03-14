@@ -13,11 +13,12 @@
 #include "sqlite_store_sensor_stat.h"
 #include "bmp183_action.h"
 #include "save2file_action.h"
+#include "ina219_action.h"
 
 // EXPERIMENTAL --------- 
-#include "led_experiments.h"
+// #include "led_experiments.h"
 #include "ina219_power_monitor.h"
-#include "ssd1306_oled_display.h"
+// #include "ssd1306_oled_display.h"
 
 GHashTable *sensorStatus;
 GHashTable *actionOutputs;
@@ -38,14 +39,17 @@ void initialize() {
     bmp183_initActionFunction(sensorStatus);
     aq_addAction(aq, 5000, &bmp183_actionFunction);
 
+    ina219_initActionFunction(sensorStatus);
+    aq_addAction(aq, 6000, &ina219_actionFunction);
+
     print_initActionFunction(sensorStatus);
     aq_addAction(aq, 500000, &print_actionFunction);
 
-   save_actual_initActionFunction(sensorStatus);
-   aq_addAction(aq, 550000, &save_actual_actionFunction);
+    save_actual_initActionFunction(sensorStatus);
+    aq_addAction(aq, 550000, &save_actual_actionFunction);
 
-  //  sqliteStore_initActionFunction(sensorStatus);
-  // aq_addAction(aq, 600000, &sqliteStore_actionFunction);
+    sqliteStore_initActionFunction(sensorStatus);
+    aq_addAction(aq, 600000, &sqliteStore_actionFunction);
 }
 
 void mainEventLoop() {
@@ -70,13 +74,8 @@ int main(int argc, char **argv) {
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
-
-    ina219_testMeasurement();
-    ssd1306_demo();
-
-
-    // initialize();
-    // mainEventLoop();
-    // run_led_experiment();
+    initialize();
+    mainEventLoop();
+    
     closelog();
 }

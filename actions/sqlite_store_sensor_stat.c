@@ -40,7 +40,7 @@ void prepare_db_file(const char *filename) {
 	sqlite3 *db;
 	if (sqlite3_open(sqlite_filename, &db) != SQLITE_OK) {
 		sqlite_log_error("Error occured opening SQLite DB file:", sqlite3_errmsg(db));
-		return -1;
+		_exit(-1);
 	}
 
 	sqlite3_exec(db, sqlCreateSensorTable, NULL, NULL, NULL);
