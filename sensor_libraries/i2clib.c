@@ -41,8 +41,8 @@ int i2c_writeToDevice(int fd, uint8_t address, void *data, uint8_t length) {
 
 int i2c_readFromDevice(int fd, uint8_t address, void *data, uint8_t length) {
     selectDevice(fd, address);
-    int written = read(fd, data, length);
-    return written;    
+    int readBytes = read(fd, data, length);
+    return readBytes;    
 }
 
 void i2c_closeDevice(int fd) {
