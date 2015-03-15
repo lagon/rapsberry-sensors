@@ -45,6 +45,51 @@ int i2c_readFromDevice(int fd, uint8_t address, void *data, uint8_t length) {
     return readBytes;    
 }
 
+uint16_t combineBytesToWord(uint8_t msb, uint8_t lsb) {
+    uint16_t output = (msb << 8) + lsb;
+    return output;
+}
+
+uint16_t i2c_read16bits(int fd, uint8_t address, uint8_t reg) {
+    uint8_t in_data[2] = {0, 0};
+    if (i2c_writeToDevice(fd, address, &reg, 1) != 1) {
+        syslog(LOG_ERR, "I2C - Unable to send out register address to read from");
+        return 0xFFFF;
+    };
+    if (i2c_readFromDevice(fd, address, in_data, 2) != 2) {
+        syslog(LOG_ERR, "I2C - Unable to get value");
+        return 0xFFFF;
+    }
+    uint16_t rawValue;
+    rawValue = combineBytesToWord(in_data[0], in_data[1]);  
+    return rawValue;
+}
+
+int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value) {
+    uint8_t out_data [3];
+    out_data[0] = reg;
+    out_data[1] = (value & 0xFF00) >> 8;
+    out_data[2] = value & 0x00FF;
+
+    if (i2c_writeToDevice(fd, address, out_data, 3) != 3) {
+        syslog(LOG_ERR, "I2C - Unable write 16 bits of data to device");        
+        return -1;
+    }
+    return 3;
+}
+
+int i2c_write8bits(int fd, uint8_t address, uint8_t reg, uint8_t value) {
+    uint8_t out_data [2];
+    out_data[0] = reg;
+    out_data[1] = value;
+
+    if (i2c_writeToDevice(fd, address, out_data, 2) != 2) {
+        syslog(LOG_ERR, "I2C - Unable write 8 bits of data to device");        
+        return -1;
+    }
+    return 2;
+}
+
 void i2c_closeDevice(int fd) {
     close(fd);
 }
