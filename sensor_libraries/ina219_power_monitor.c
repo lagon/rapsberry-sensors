@@ -84,24 +84,8 @@ void ina219_initateVoltageReadingSingle(struct ina219State *ina219) {
 	i2c_writeToDevice(ina219->i2cBusDevice, ina219->address, data, 3);
 }
 
-uint16_t combineBytesToWord(uint8_t msb, uint8_t lsb) {
-	uint16_t output = (msb << 8) + lsb;
-	return output;
-}
-
 uint16_t ina219_read16bits(struct ina219State *ina219, uint8_t reg) {
-	uint8_t in_data[2] = {0, 0};
-	if (i2c_writeToDevice(ina219->i2cBusDevice, ina219->address, &reg, 1) != 1) {
-		syslog(LOG_ERR, "INA219 - Unable to write register address to power monitor");
-		return 0xFFFF;
-	};
-	if (i2c_readFromDevice(ina219->i2cBusDevice, ina219->address, in_data, 2) != 2) {
-		syslog(LOG_ERR, "INA219 - Unable to read value from power monitor");
-		return 0xFFFF;
-	}
-	uint16_t rawValue;
-	rawValue = combineBytesToWord(in_data[0], in_data[1]);	
-	return rawValue;
+	return i2c_read16bits(ina219->i2cBusDevice, ina219->address, reg);
 }
 
 int ina219_isReadingReady(struct ina219State *ina219) {

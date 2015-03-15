@@ -33,4 +33,6 @@ actionFunction *aq_getAction(struct actionQueue * queue);
 
 void destroyQueue(struct actionQueue *queue);
 
+struct actionOutputItem *generateOutputItem(const char* name, double value);
+
 #endif
