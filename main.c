@@ -14,11 +14,13 @@
 #include "bmp183_action.h"
 #include "save2file_action.h"
 #include "ina219_action.h"
+#include "mcp9808_action.h"
 
 // EXPERIMENTAL --------- 
 // #include "led_experiments.h"
-#include "ina219_power_monitor.h"
+// #include "ina219_power_monitor.h"
 // #include "ssd1306_oled_display.h"
+#include "mcp9808_temperature.h"
 
 GHashTable *sensorStatus;
 GHashTable *actionOutputs;
@@ -41,6 +43,9 @@ void initialize() {
 
     ina219_initActionFunction(sensorStatus);
     aq_addAction(aq, 6000, &ina219_actionFunction);
+
+    mcp9808_initActionFunction(sensorStatus);
+    aq_addAction(aq, 6500, &mcp9808_actionFunction);
 
     print_initActionFunction(sensorStatus);
     aq_addAction(aq, 500000, &print_actionFunction);
@@ -74,8 +79,7 @@ int main(int argc, char **argv) {
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
-    initialize();
-    mainEventLoop();
-    
+   initialize();
+   mainEventLoop();
     closelog();
 }
