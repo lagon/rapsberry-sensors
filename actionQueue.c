@@ -17,6 +17,14 @@ long long getCurrentUSecs() {
 	return currentUSecs;
 }
 
+struct actionOutputItem *generateOutputItem(const char* name, double value) {
+	struct actionOutputItem *ao_value = (struct actionOutputItem *) malloc(sizeof(struct actionOutputItem));
+	ao_value->sensorDisplayName = name;
+	ao_value->timeValueMeasured = getCurrentUSecs();
+	ao_value->sensorValue       = value;
+	return ao_value;
+}
+
 long long getUSecTimestamp(long long usecToAction) {
 	return getCurrentUSecs() + usecToAction;
 }
