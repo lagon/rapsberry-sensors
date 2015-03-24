@@ -35,7 +35,7 @@ long mcp9808_actionFunction(GHashTable* measurementOutput, GHashTable *sensorSta
 	struct mcp9808_sensorStat *mcp9808 = (struct mcp9808_sensorStat *)g_hash_table_lookup(sensorStatus, mcp9808TemperatureSensorStateName);
 
 	if (mcp9808 == NULL) {
-		syslog(LOG_ERR, "INA219 sensor status was not found. Can not continue.");
+		syslog(LOG_ERR, "MCP9808 sensor status was not found. Can not continue.");
 		return -1;
 	};
 

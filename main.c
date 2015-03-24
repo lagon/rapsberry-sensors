@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
-   initialize();
-   mainEventLoop();
+    initialize();
+    mainEventLoop();
     closelog();
 }
