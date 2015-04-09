@@ -4,23 +4,19 @@ header($header);
 
 include("utility_functions.php");
 
-$sensorName = "";
-switch ($_GET["sensorName"]) {
-	case "H21DF-Temperature":
-		$sensorName = "H21DF-Temperature";
-		break;
-	case "H21DF-Humidity":
-		$sensorName = "H21DF-Humidity";
-		break;
-	case "BMP183-Pressure":
-		$sensorName = "BMP183-Pressure";
-		break;
-	default:
-		die("Invalid Sensor Name Passed");
-}
 
 $dbHandle = startSQLite('data/sensor_stats.db');
-$temp = readSensorDataFromSql($dbHandle, $sensorName);
+$allSensors = readUniqueSensorNamesFromSql($dbHandle);
+
+if (!in_array($_GET["sensor"], $allSensors)) {
+	echo("ERROR");
+}
+
+if (!in_array($_GET["time_frame"], getAllTimeFramesAllowed())) {
+	echo("ERROR");
+}
+
+$temp = readSensorDataFromSql($dbHandle, $_GET["sensor"], $_GET["time_frame"]);
 closeSQLite($dbHandle);
 
 echo(json_encode($temp));

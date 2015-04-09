@@ -2,48 +2,43 @@
 <html>
 <head>
 	<title>Sensors</title>
-	<script src="http://d3js.org/d3.v3.js"></script>
+	<link rel="stylesheet" href="style.css">
+	<script src="d3.v3.js"> </script>
+	<script src="functions.js"> </script>
+	<script type="text/javascript">
+		function show_tab(tabName) {
+			httpreq = new XMLHttpRequest();
+			httpreq.open("GET", "tabs/" + tabName + ".php", true);
+			httpreq.onreadystatechange=function() {
+				if (httpreq.readyState==4 && httpreq.status==200) {
+    				document.getElementById("main_content").innerHTML=httpreq.responseText;
+    			} else {
+    				document.getElementById("main_content").innerHTML=httpreq.statusText;
+//    				alert(httpreq.statusText);
+    			}
+			}
+			document.getElementById("main_content").innerHtml = "Loading...";
+			httpreq.send();
+			document.getElementById("top_menu_current").className = "inactive_tab";
+			document.getElementById("top_menu_graphs").className = "inactive_tab";
+			document.getElementById("top_menu_lights").className = "inactive_tab";
+			document.getElementById(tabName).className = "active_tab";
+
+		}
+	</script>
 </head>
 <body>
 
-<?php
+<ul id="top_menu">
+	<li id="top_menu_current"><a href="javascript:show_tab('top_menu_current')">Current Values</a></li>
+	<li id="top_menu_graphs"><a href="javascript:show_tab('top_menu_graphs')">History Graphs</a></li>
+	<li id="top_menu_lights"><a href="javascript:show_tab('top_menu_lights')">Light Control</a></li>
+</ul>
 
+<div id="main_content">
+</div>
 
-include("utility_functions.php");
-
-$latest = readActualValues("data/latestValues.csv");
-
-echo("<table>");
-echo("<tr>");
-foreach (array_keys($latest) as $i) {
-	echo("<td>". $i . "</td>");
-}
-
-echo("</tr>");
-echo("<tr>");
-foreach (array_keys($latest) as $i) {
-	echo("<td>". number_format($latest[$i], 2, ".", " ") . "</td>");
-}
-echo("</tr>");
-echo("</table>");
-
-$dbHandle = startSQLite('data/sensor_stats.db');
-
-$temp = readSensorDataFromSql($dbHandle, "H21DF-Temperature");
-echo("<h1>Inside Temperature</h1>");
-doTableWithSensorValues($temp);
-
-$humidity = readSensorDataFromSql($dbHandle, "H21DF-Humidity");
-echo("<h1>Inside Humidity</h1>");
-doTableWithSensorValues($humidity);
-
-$pressure = readSensorDataFromSql($dbHandle, "BMP183-Pressure");
-echo("<h1>Athmospheric Pressure</h1>");
-doTableWithSensorValues($pressure);
-
-
-
-?>
+<script type="text/javascript">show_tab('top_menu_current')</script>
 
 </body>
 </html>
