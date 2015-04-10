@@ -34,7 +34,7 @@ void run_led_experiment() {
 		exit(-1);
 	}
 	struct allLedControlStruct *ledctrl = initiateLEDControls(1);
-	setGlobalBrightness(ledctrl, 127);
+	setGlobalBrightness(ledctrl, 255);
 	struct ledPWMSettings led_settings;
 	led_settings.blank  = 0;
 	led_settings.dsprpt = 1;
@@ -45,34 +45,81 @@ void run_led_experiment() {
 
 	// int led_power = 0;
 	// int timestep = 0;
-	while (1) {
-		for (int i = 0; i < 50; i++) {
-			for (int j = 0; j < 6; j++) {
-				setOneGrayscaleLed(ledctrl, j, turn_on_fluorescent_lamp(i, 50));
+	// while (1) {
+	// 	for (int i = 0; i < 50; i++) {
+	// 		for (int j = 0; j < 6; j++) {
+	// 			setOneGrayscaleLed(ledctrl, j, turn_on_fluorescent_lamp(i, 50));
+	// 		}
+	// 		sendOutLedDataDefaults(ledctrl, spidev);
+	// 		usleep(100000);
+	// 	};
+
+	// 	for (int j = 0; j < 6; j++) {
+	// 		setOneGrayscaleLed(ledctrl, j, 0xFFFF);
+	// 	}
+	// 	sendOutLedDataDefaults(ledctrl, spidev);
+	// 	sleep(10);
+
+	// 	for (int i = 0; i < 100; i++) {
+	// 		for (int j = 0; j < 6; j++) {
+	// 			setOneGrayscaleLed(ledctrl, j, turn_off_decay(i, 100));
+	// 		}
+	// 		sendOutLedDataDefaults(ledctrl, spidev);
+	// 		usleep(100000);
+	// 	};
+
+
+	// 	for (int j = 0; j < 6; j++) {
+	// 		setOneGrayscaleLed(ledctrl, j, 0);
+	// 	}
+
+	sleep(5);
+
+	for (int lp = 0; lp < 5; lp++) {
+		for (int i = 0; i < 12; i++) {
+			for (int j = 0; j < 12; j++) {
+				setOneGrayscaleLed(ledctrl, j, i == j ? 0xFFFF : 0);
 			}
 			sendOutLedDataDefaults(ledctrl, spidev);
 			usleep(100000);
-		};
-
-		for (int j = 0; j < 6; j++) {
-			setOneGrayscaleLed(ledctrl, j, 0xFFFF);
 		}
-		sendOutLedDataDefaults(ledctrl, spidev);
-		sleep(10);
-
-		for (int i = 0; i < 100; i++) {
-			for (int j = 0; j < 6; j++) {
-				setOneGrayscaleLed(ledctrl, j, turn_off_decay(i, 100));
+		for (int i = 10; i > 0; i--) {
+			for (int j = 0; j < 12; j++) {
+				setOneGrayscaleLed(ledctrl, j, i == j ? 0xFFFF : 0);
 			}
 			sendOutLedDataDefaults(ledctrl, spidev);
 			usleep(100000);
-		};
-
-
-		for (int j = 0; j < 6; j++) {
-			setOneGrayscaleLed(ledctrl, j, 0);
 		}
-		sendOutLedDataDefaults(ledctrl, spidev);
-		sleep(10);
+
 	}
+
+	for (int j = 0; j < 12; j++) {
+	 		setOneGrayscaleLed(ledctrl, j, 0xFFFF);
+	}
+	sendOutLedDataDefaults(ledctrl, spidev);
+	sleep(5);
+
+	for (int j = 0; j < 12; j++) {
+	 		setOneGrayscaleLed(ledctrl, j, 0);
+	}
+	sendOutLedDataDefaults(ledctrl, spidev);
+	usleep(200000);
+
+	for (int j = 0; j < 12; j++) {
+	 		setOneGrayscaleLed(ledctrl, j, 0xFFFF);
+	}
+	sendOutLedDataDefaults(ledctrl, spidev);
+	usleep(200000);
+
+	for (int j = 0; j < 12; j++) {
+	 		setOneGrayscaleLed(ledctrl, j, 0);
+	}
+	sendOutLedDataDefaults(ledctrl, spidev);
+	usleep(200000);
+
+	for (int j = 0; j < 12; j++) {
+	 		setOneGrayscaleLed(ledctrl, j, 0xFFFF);
+	}
+	sendOutLedDataDefaults(ledctrl, spidev);
+
 }
