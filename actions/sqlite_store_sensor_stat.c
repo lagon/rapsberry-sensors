@@ -13,7 +13,9 @@
 
 static const char *sqlInsertSensorDataStatement = "INSERT INTO sensorStats (sensorID, sensorDisplayName, measurementTime, sensorValue) values (?, ?, ?, ?);";
 static const char *sqlite_filename = "./data/sensor_stats.db";
-static const char *sqlCreateSensorTable = "create table sensorStats (sensorID varchar not null, sensorDisplayName varchar, measurementTime bigint not null, sensorValue double, primary key (sensorID, measurementTime));";
+static const char *sqlCreateSensorNameTable = "create table sensorNames (sensorID varchar not null, sensorDisplayName varchar, sensorUnits varchar, sensorValueName varchar, primary key (sensorID));";
+static const char *sqlCreateSensorMeasurementTable = "create table sensorStats (sensorID varchar not null, sensorDisplayName varchar, measurementTime bigint not null, sensorValue double, primary key (sensorID, measurementTime));";
+static const char *sqlCreateInputsTable = "create table inputs (inputName varchar not null, stringValue varchar, doubleValue double, primary key (inputName));";
 
 void sqlite_log_error(const char *msg, const char *db_msg) {
 		int len =  (strlen(msg) + strlen(db_msg) + 50);
@@ -43,7 +45,9 @@ void prepare_db_file(const char *filename) {
 		_exit(-1);
 	}
 
-	sqlite3_exec(db, sqlCreateSensorTable, NULL, NULL, NULL);
+	sqlite3_exec(db, sqlCreateSensorNameTable, NULL, NULL, NULL);
+	sqlite3_exec(db, sqlCreateSensorMeasurementTable, NULL, NULL, NULL);
+	sqlite3_exec(db, sqlCreateInputsTable, NULL, NULL, NULL);
 	sqlite3_close(db);
 }
 
