@@ -35,26 +35,47 @@ void initialize() {
     sensorStatus = g_hash_table_new(&g_str_hash, &g_str_equal);
     actionOutputs = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &free_action_output);
 
-    h21df_initActionFunction(sensorStatus);
-    aq_addAction(aq, 1000, &h21df_actionFunction);
+    if (h21df_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 1000, &h21df_actionFunction);
+    } else {
+        syslog(LOG_ERR, "H21DF Humidity sensor initiation failed. Sensor will not run.");
+    }
 
-    bmp183_initActionFunction(sensorStatus);
-    aq_addAction(aq, 5000, &bmp183_actionFunction);
+    if (bmp183_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 5000, &bmp183_actionFunction);
+    } else {
+        syslog(LOG_ERR, "BMP183 Pressure sensor initiation failed. Sensor will not run.");
+    }
 
-    ina219_initActionFunction(sensorStatus);
-    aq_addAction(aq, 6000, &ina219_actionFunction);
+    if (ina219_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 6000, &ina219_actionFunction);
+    } else {
+        syslog(LOG_ERR, "INA219 Power Consumption sensor initiation failed. Sensor will not run.");
+    }
 
-    mcp9808_initActionFunction(sensorStatus);
-    aq_addAction(aq, 6500, &mcp9808_actionFunction);
+    if (mcp9808_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 6500, &mcp9808_actionFunction);
+    } else {
+        syslog(LOG_ERR, "MCP9808 Temperature sensor initiation failed. Sensor will not run.");
+    }
 
-    print_initActionFunction(sensorStatus);
-    aq_addAction(aq, 500000, &print_actionFunction);
+    if (print_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 500000, &print_actionFunction);
+    } else {
+        syslog(LOG_ERR, "Print on terminal initiation failed. Sensor will not run.");
+    }
 
-    save_actual_initActionFunction(sensorStatus);
-    aq_addAction(aq, 550000, &save_actual_actionFunction);
+    if (save_actual_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 550000, &save_actual_actionFunction);
+    } else {
+        syslog(LOG_ERR, "Store current value initiation failed. Sensor will not run.");
+    }
 
-    sqliteStore_initActionFunction(sensorStatus);
-    aq_addAction(aq, 600000, &sqliteStore_actionFunction);
+    if (sqliteStore_initActionFunction(sensorStatus) > 0) {
+        aq_addAction(aq, 600000, &sqliteStore_actionFunction);
+    } else {
+        syslog(LOG_ERR, "Archive measurements to SQLite initiation failed. Sensor will not run.");
+    }
 }
 
 void mainEventLoop() {
@@ -78,7 +99,7 @@ int main(int argc, char **argv) {
 
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
-
+//    run_led_experiment();
     initialize();
     mainEventLoop();
     closelog();
