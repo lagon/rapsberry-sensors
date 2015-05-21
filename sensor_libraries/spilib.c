@@ -135,6 +135,7 @@ int spi_write8bToAnyAddress(int device, const uint8_t *address, uint8_t addressL
 int spi_duplexTransfer(int device, uint8_t *out_data, uint8_t *in_data, unsigned int length, unsigned int speed, unsigned int bits_per_word, unsigned int cs_change_at_end) {
     struct spi_ioc_transfer *spi = (struct spi_ioc_transfer *) malloc(sizeof(struct spi_ioc_transfer) * length);
     if (spi == NULL) {perror("Unable to allocate memory"); exit(-1);}
+    spi = memset(spi, 0, sizeof(struct spi_ioc_transfer) * length);
     for (int i = 0; i < length; i++) {
         spi[i].tx_buf        = (unsigned long)(out_data + i);
         spi[i].rx_buf        = (unsigned long)(in_data + i);
@@ -158,17 +159,6 @@ int spi_duplexTransfer(int device, uint8_t *out_data, uint8_t *in_data, unsigned
         free(spi);
         return -1;
     }
-    // printf(">>>> ");
-    // for (int i = 0; i < length; i++) {
-    //     printf("%2x ", out_data[i]);
-    // }
-    // printf("\n");
-    // printf("<<<< ");
-    // for (int i = 0; i < length; i++) {
-    //     printf("%2x ", in_data[i]);
-    // }
-    // printf("\n");
-
 
     free(spi);
     return 1;

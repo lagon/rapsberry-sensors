@@ -11,8 +11,8 @@ static const int MAX_RESET_DELAY        = 15;   // ms
 
 static uint8_t HTU21DF_READTEMP_NH      = 0xF3; // NH = no hold
 static uint8_t HTU21DF_READHUMI_NH      = 0xF5;
-static uint8_t HTU21DF_WRITEREG         = 0xE6;
-static uint8_t HTU21DF_READREG          = 0xE7;
+//static uint8_t HTU21DF_WRITEREG         = 0xE6;
+//static uint8_t HTU21DF_READREG          = 0xE7;
 static uint8_t HTU21DF_RESET            = 0xFE;
 
 static const double HTU21DF_TEMPERATURE_COMPENSATION_COEFICIENT = -0.15;

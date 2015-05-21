@@ -11,57 +11,21 @@
 #include <unistd.h>
 #include <errno.h>
 
+#include "utilityFunctions.h"
+
 static const char *sqlInsertSensorDataStatement = "INSERT INTO sensorStats (sensorID, sensorDisplayName, measurementTime, sensorValue) values (?, ?, ?, ?);";
-static const char *sqlite_filename = "./data/sensor_stats.db";
-static const char *sqlCreateSensorNameTable = "create table sensorNames (sensorID varchar not null, sensorDisplayName varchar, sensorUnits varchar, sensorValueName varchar, primary key (sensorID));";
-static const char *sqlCreateSensorMeasurementTable = "create table sensorStats (sensorID varchar not null, sensorDisplayName varchar, measurementTime bigint not null, sensorValue double, primary key (sensorID, measurementTime));";
-static const char *sqlCreateInputsTable = "create table inputs (inputName varchar not null, stringValue varchar, doubleValue double, primary key (inputName));";
-
-void sqlite_log_error(const char *msg, const char *db_msg) {
-		int len =  (strlen(msg) + strlen(db_msg) + 50);
-		char * sys_msg = (char *) malloc(sizeof(char) * len);
-		snprintf(sys_msg, len, "%s %s", msg, db_msg);
-		syslog(LOG_ERR, sys_msg);
-		free(sys_msg);
-}
-
-void prepare_db_file(const char *filename) {
-	int f = open(sqlite_filename, O_RDONLY);
-	if (f >= 0) {
-		printf("SQL file found - reusing.\n");
-		close(f);
-		return;
-	}
-
-	if (errno != 2) {
-		perror("Something very wrong had happened.");
-		_exit(-1);
-	}
-
-	printf("SQL file not found - creating new one.\n");
-	sqlite3 *db;
-	if (sqlite3_open(sqlite_filename, &db) != SQLITE_OK) {
-		sqlite_log_error("Error occured opening SQLite DB file:", sqlite3_errmsg(db));
-		_exit(-1);
-	}
-
-	sqlite3_exec(db, sqlCreateSensorNameTable, NULL, NULL, NULL);
-	sqlite3_exec(db, sqlCreateSensorMeasurementTable, NULL, NULL, NULL);
-	sqlite3_exec(db, sqlCreateInputsTable, NULL, NULL, NULL);
-	sqlite3_close(db);
-}
 
 long sqliteStore_initActionFunction(GHashTable *sensorStatus) {
 	struct sqlStatusActionStatus *sql = (struct sqlStatusActionStatus*) malloc(sizeof(sqlStatusActionStatus));
-	prepare_db_file(sqlite_filename);
+//	prepare_db_file(sqlite_filename);
 
 	if (sqlite3_open(sqlite_filename, &sql->db) != SQLITE_OK) {
-		sqlite_log_error("Error occured opening SQLite DB file:", sqlite3_errmsg(sql->db));
+		logErrorMessage("Error occured opening SQLite DB file: %s", sqlite3_errmsg(sql->db));
 		return -1;
 	}
 
 	if (sqlite3_prepare_v2(sql->db, sqlInsertSensorDataStatement, strlen(sqlInsertSensorDataStatement), &sql->preparedStmt, NULL) != SQLITE_OK) {
-		sqlite_log_error("Error occured compiling prepared statement:", sqlite3_errmsg(sql->db));
+		logErrorMessage("Error occured compiling prepared statement %s:", sqlite3_errmsg(sql->db));
 		return -2;
 	}
 	
@@ -78,13 +42,13 @@ void sqliteSensorFnc(gpointer key, gpointer value, gpointer sqliteStatus) {
 		(sqlite3_bind_text(sql->preparedStmt, 2, v->sensorDisplayName, strlen(v->sensorDisplayName), SQLITE_STATIC) != SQLITE_OK) ||
 		(sqlite3_bind_int64(sql->preparedStmt, 3, v->timeValueMeasured) != SQLITE_OK) ||
 		(sqlite3_bind_double(sql->preparedStmt, 4, v->sensorValue) != SQLITE_OK)) {
-			sqlite_log_error("Error filling in prepared statement:", sqlite3_errmsg(sql->db));
+			logErrorMessage("Error filling in prepared statement: %s", sqlite3_errmsg(sql->db));
 	}
 
 	int ret = sqlite3_step(sql->preparedStmt);
 	ret = sqlite3_reset(sql->preparedStmt);
 	if (ret != SQLITE_OK) {
-		sqlite_log_error("Error executing prepared statement:", sqlite3_errmsg(sql->db));
+		logErrorMessage("Error executing prepared statement: %s", sqlite3_errmsg(sql->db));
 	}
 
 	return;
