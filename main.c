@@ -128,6 +128,8 @@ int main(int argc, char **argv) {
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
     initialize();
+    printf("1112!!!!!\n");
+
     el_runEventLoop(eventLoop);
 //    run_led_experiment();
 

@@ -111,6 +111,7 @@ void extractSensorsFromSingleAction(gpointer rawActionPtr, gpointer allSensorsPt
 
 GList *extractAllSensorsFromActions(GList *allActions) {
 	GList *allSensors;
+	printf("!!!!!\n");
 
 	//g_list_foreach(allActions, &extractSensorsFromSingleAction, &allSensors);
 	return(allSensors);
@@ -118,6 +119,7 @@ GList *extractAllSensorsFromActions(GList *allActions) {
 
 ///List of singleSensorDescription_t
 void enureAllSensorDescriptionInDB(GList *allActions) {
+	printf("!!!!!\n");
 	sqlite3 *db;
 	if (sqlite3_open(sqlite_filename, &db) != SQLITE_OK) {
 		logErrorMessage("Error occured opening SQLite DB file: %s\n", sqlite3_errmsg(db));
@@ -128,4 +130,6 @@ void enureAllSensorDescriptionInDB(GList *allActions) {
 	//g_list_foreach(allSensors, &ensureSensorInDB, (gpointer) db);
 
 	sqlite3_close(db);
+	printf("!!!!!\n");
+
 };
