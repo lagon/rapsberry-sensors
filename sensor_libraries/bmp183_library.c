@@ -48,7 +48,7 @@ struct bmp183_device *bmp183_init(int busID, int deviceID, int speed, uint8_t pr
 
 	bmp183->dev = fd;
 	bmp183->speed = speed;
-	uint16_t tmp;
+	uint16_t tmp = 0;
 
 #ifdef __BMP183_DEBUG__
 	bmp183->ac1 = 408;

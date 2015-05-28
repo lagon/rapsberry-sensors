@@ -9,13 +9,13 @@ struct actionQueue *aq_initQueue() {
 	return aq;
 }
 
-long long getCurrentUSecs() {
-	struct timeval  tv;
-	gettimeofday(&tv, NULL);
+// long long getCurrentUSecs() {
+// 	struct timeval  tv;
+// 	gettimeofday(&tv, NULL);
 
-	long long currentUSecs = (long long)tv.tv_sec * (long long)1000 * (long long)1000 + (long long)tv.tv_usec;
-	return currentUSecs;
-}
+// 	long long currentUSecs = (long long)tv.tv_sec * (long long)1000 * (long long)1000 + (long long)tv.tv_usec;
+// 	return currentUSecs;
+// }
 
 struct actionOutputItem *generateOutputItem(const char* name, double value) {
 	struct actionOutputItem *ao_value = (struct actionOutputItem *) malloc(sizeof(struct actionOutputItem));
@@ -60,7 +60,7 @@ void printActionQueue(struct actionQueue * queue) {
 	printf("\n");
 }
 
-struct actionQueue *aq_addAction(struct actionQueue * queue, long long usecsToAction, actionFunction fnc) {
+struct actionQueue *aq_addAction(struct actionQueue * queue, long long usecsToAction, struct actionDescriptorStructure_t *fnc) {
 	long long actionUSecTime = getUSecTimestamp(usecsToAction);
 	struct actionQueueItem *item = getItemBeforeTime(queue->first, actionUSecTime);
 	struct actionQueueItem *tmp  = (struct actionQueueItem *)malloc(sizeof(struct actionQueueItem));
@@ -92,13 +92,13 @@ long long aq_usecsToNextAction(struct actionQueue * queue) {
 	}
 }
 
-actionFunction *aq_getAction(struct actionQueue * queue) {
+struct actionDescriptorStructure_t *aq_getAction(struct actionQueue * queue) {
 	if (queue->first == NULL) {
 		syslog(LOG_WARNING, "No action recorded in the action queue.");
 		return NULL;
 	}
 	struct actionQueueItem *tmp = queue->first;
-	actionFunction *af = tmp->fnc;
+	struct actionDescriptorStructure_t *af = tmp->fnc;
 	queue->first = queue->first->next;
 	free(tmp);
 	return af;

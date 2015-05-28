@@ -2,15 +2,36 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <syslog.h>
+#include "sensorDescriptionStructure.h"
+#include "actionDescriptorStructure.h"
 
 const char *printSensorStatusName = "PrintOutStatus";
 const long printSensorInterval = 15 * 1000 * 1000; //5 secs
 
-long print_initActionFunction(GHashTable *sensorStatus) {
+struct actionDescriptorStructure_t printActionStructure;
+
+struct actionReturnValue_t print_returnValue;
+
+struct printActionStatus {
+	long last_printout;
+} printActionStatus;
+
+struct allSensorsDescription_t print_allSensors = {
+	.numSensors = 0,
+	.sensorDescriptions = {}
+};
+
+
+struct actionReturnValue_t *print_initActionFunction() {
 	struct printActionStatus *stat = (struct printActionStatus *)malloc(sizeof(struct printActionStatus));
 	stat->last_printout = getCurrentUSecs();
-	g_hash_table_replace(sensorStatus, (gpointer) printSensorStatusName, stat);
-	return 10000;
+	print_returnValue.sensorState = stat;
+	print_returnValue.actionErrorStatus = 0;
+	print_returnValue.usecsToNextInvocation = printSensorInterval;
+	print_returnValue.waitOnInputMode = WAIT_TIME_PERIOD;
+	print_returnValue.changedInputs = &noInputsChanged;
+
+	return &print_returnValue;
 }
 
 void printSensorFnc(gpointer key, gpointer value, gpointer userData) {
@@ -18,21 +39,35 @@ void printSensorFnc(gpointer key, gpointer value, gpointer userData) {
 	printf("Sensor %s has value of %.1f\n", v->sensorDisplayName, v->sensorValue);
 }
 
-long print_actionFunction(GHashTable* measurementOutput, GHashTable *sensorStatus) {
+struct actionReturnValue_t *print_actionFunction(void *status, GHashTable* measurementOutput, GHashTable *sensorStatus) {
 	g_hash_table_foreach(measurementOutput, &printSensorFnc, NULL);
-	return printSensorInterval;
+	return &print_returnValue;
+}
+
+const char *print_getActionName() {
+	return printSensorStatusName;
+}
+
+struct inputNotifications_t *print_actionStateWatchedInputs() {
+	return &noInputsToWatch;
+}
+
+struct allSensorsDescription_t *print_actionStateAllSensors() {
+	return &print_allSensors;
 }
 
 
-void print_closeActionFunction(GHashTable *sensorStatus) {
-	struct printActionStatus *status = (struct printActionStatus *)g_hash_table_lookup(sensorStatus, printSensorStatusName);
-
-	if (status == NULL) {
-		syslog(LOG_ERR, "Print to console sensor status was not found. Can not continue.");
-		return;
-	};
-	
-	free(status);
-
-	g_hash_table_remove(sensorStatus, (gpointer) printSensorStatusName);
+void print_closeActionFunction(void *sensorStatus) {
+	free(sensorStatus);
+	return;
 }
+
+
+struct actionDescriptorStructure_t printActionStructure = {
+	.initiateActionFunction = &print_initActionFunction,
+	.stateWatchedInputs = &print_actionStateWatchedInputs,
+	.stateAllSensors = &print_actionStateAllSensors,
+	.actionFunction = &print_actionFunction,
+	.getActionNameFunction = &print_getActionName,
+	.destroyActionFunction = &print_closeActionFunction
+};
