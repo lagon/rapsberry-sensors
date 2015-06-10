@@ -10,7 +10,7 @@
 
 
 enum kbInput_blockingState_t {kbInput_BlockingTerminal, kbInput_NonBlockingTerminal} bmp183_measurementState;
-const long long kbInput_KeyboardCheckingTime = 500 * 1000; //500 ms
+const long long kbInput_KeyboardCheckingTime = 10 * 1000 * 1000; //500 ms
 const char *kbInput_actionName = "kbInputAction";
 const char *keyboardInputName = __keyboardInputName;
 const int stdinFileID = 0;

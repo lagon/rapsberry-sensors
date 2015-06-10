@@ -16,6 +16,7 @@
 #include "utilityFunctions.h"
 #include "actionDescriptorStructure.h"
 #include "sensorDescriptionStructure.h"
+#include "sqliteDbUtilityFunctions.h"
 
 struct mainEventLoopControl_t {
 	GHashTable *allActionsRegistry; // Hastable with action name string as a key and pointer to struct actionDescriptorStructure_t. Contains all the actions registered even those no longer scheduled.

@@ -7,7 +7,7 @@
 #include <glib.h>
 #include <unistd.h>
 
-#include "prepareSQLDatabase.h"
+#include "sqliteDbUtilityFunctions.h"
 #include "main_event_loop.h"
 
 #include "actionQueue.h"
@@ -46,18 +46,19 @@ GList *getAllActions() {
     allActions = g_list_append(allActions, &mcp9808ActionStructure);
     allActions = g_list_append(allActions, &kbInputActionStructure);
     allActions = g_list_append(allActions, &ledDriverActionStructure);
+    allActions = g_list_append(allActions, &save2SqlActionStructure);
 
     return allActions;
 }
 
 void initialize() {
+    prepareSQLDatabase();
 
     // sensorStatus = g_hash_table_new(&g_str_hash, &g_str_equal);
     // actionOutputs = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &free_action_output);
     GList *allActions = getAllActions();
     eventLoop = el_initializeEventLoop(allActions);
 
-    prepareSQLDatabase();
     enureAllSensorDescriptionInDB(allActions);
 
     // aq = aq_initQueue();

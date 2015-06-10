@@ -1,4 +1,4 @@
-#include "prepareSQLDatabase.h"
+#include "sqliteDbUtilityFunctions.h"
 
 #include <sqlite3.h>
 #include <syslog.h>
@@ -13,39 +13,52 @@
 #include "utilityFunctions.h"
 #include "sensorDescriptionStructure.h"
 
-const char *sqlite_filename = "./data/sensor_stats.db";
 static const char *sqlCreateSensorNameTable = "create table sensorNames (sensorID varchar not null, sensorDisplayName varchar, sensorUnits varchar, sensorValueName varchar, primary key (sensorID));";
 static const char *sqlCreateSensorMeasurementTable = "create table sensorStats (sensorID varchar not null, sensorDisplayName varchar, measurementTime bigint not null, sensorValue double, primary key (sensorID, measurementTime));";
 static const char *sqlCreateInputsTable = "create table inputs (inputName varchar not null, stringValue varchar, doubleValue double, primary key (inputName));";
 
+const char *sqlite_filename = "./data/sensor_stats.db";
 
-void prepareSQLDatabase() {
-	int f = open(sqlite_filename, O_RDONLY);
-	if (f >= 0) {
-		printf("SQL file found - reusing.\n");
-		close(f);
-		return;
-	}
-
-	if (errno != 2) {
-		perror("Something very wrong had happened.");
-		_exit(-1);
-	}
-
-	printf("SQL file not found - creating new one.\n");
+sqlite3 *openDbConnection() {
 	sqlite3 *db;
 	if (sqlite3_open(sqlite_filename, &db) != SQLITE_OK) {
 		logErrorMessage("Error occured opening SQLite DB file: %s \n", sqlite3_errmsg(db));
 		_exit(-1);
+	}	
+	printf("Opening SQLite connection\n");
+	return db;
+};
+
+void closeDbConnection(sqlite3 *connection) {
+	printf("Closing SQLite connection\n");
+	sqlite3_close(connection);
+}
+
+void prepareSQLDatabase() {
+	struct stat statStruct;
+	if (stat(sqlite_filename, &statStruct) == 0) {
+		printf("SQL file found - reusing.\n");
+		return;		
+	} else {
+		if (errno != ENOENT) {
+			perror("SQL file not found and following fatal error occured: ");
+			_exit(2);
+		}
 	}
+
+	printf("SQL file not found - creating new one.\n");
+	sqlite3 *db = openDbConnection();
 
 	sqlite3_exec(db, sqlCreateSensorNameTable, NULL, NULL, NULL);
 	sqlite3_exec(db, sqlCreateSensorMeasurementTable, NULL, NULL, NULL);
 	sqlite3_exec(db, sqlCreateInputsTable, NULL, NULL, NULL);
-	sqlite3_close(db);
+	closeDbConnection(db);
 }
 
 void ensureSensorInDB(gpointer data, gpointer db) {
+	if (data == NULL) {
+		return;
+	}
 	struct singleSensorDescription_t *sensor = (struct singleSensorDescription_t *) data;
 	sqlite3 *db3 = (sqlite3 *)db;
 	sqlite3_stmt *preparedStmt;
@@ -56,7 +69,7 @@ void ensureSensorInDB(gpointer data, gpointer db) {
 		return;
 	};
 
-	if (sqlite3_bind_text(preparedStmt, 1, sensor->sensorID, strlen((char *)sensor->sensorID) * sizeof(char), SQLITE_STATIC) != SQLITE_OK) {
+	if (sqlite3_bind_text(preparedStmt, 1, sensor->sensorID, -1, SQLITE_STATIC) != SQLITE_OK) {
 		logErrorMessage("Error occured compiling prepared statement: %s\n", sqlite3_errmsg(db3));
 		return;		
 	}
@@ -65,13 +78,17 @@ void ensureSensorInDB(gpointer data, gpointer db) {
 		logErrorMessage("Error occured executing prepared statement: %s\n", sqlite3_errmsg(db3));
 		return;				
 	}
-	int num_records = sqlite3_column_int(preparedStmt, 1);
+	double num_records = sqlite3_column_double(preparedStmt, 0);
+	printf("#Records: %f\n", num_records);
+
+	sqlite3_reset(preparedStmt);
+	sqlite3_finalize(preparedStmt);
+
 	if (num_records > 0) {
 		//Sensor with given ID is already in DB.
 		printf("\tSensor found, skipping...\n");
 		return;
 	}
-	sqlite3_reset(preparedStmt);
 
 	if (sqlite3_prepare_v2(db3, "INSERT INTO sensorNames (sensorID, sensorDisplayName, sensorUnits, sensorValueName) VALUES (?, ?, ?, ?);", -1, &preparedStmt, NULL) != SQLITE_OK) {
 		logErrorMessage("Error occured compiling prepared statement:", sqlite3_errmsg(db3));
@@ -90,46 +107,59 @@ void ensureSensorInDB(gpointer data, gpointer db) {
 
 	sqlite3_step(preparedStmt);
 	sqlite3_reset(preparedStmt);
-
+	sqlite3_finalize(preparedStmt);
+	char *errmgs;
+	sqlite3_exec(db3, "COMMIT", NULL, NULL, &errmgs);
+	if (errmgs != NULL) {
+		printf("Error is %s\n", errmgs);
+		sqlite3_free(errmgs);
+	} else {
+		printf("Sensor add commited correctly\n");
+	}
+	
 	return;
 };
 
 
 void extractSensorsFromSingleAction(gpointer rawActionPtr, gpointer allSensorsPtr) {
 	struct actionDescriptorStructure_t *action = (struct actionDescriptorStructure_t *)rawActionPtr;
-	GList *allSensors = *((GList **)allSensorsPtr);
+	GList *allSensors = (GList *)allSensorsPtr;
 	printf("Examining action %s for inputs. \n", action->getActionNameFunction());
 	struct allSensorsDescription_t *sensors = action->stateAllSensors();
 
 	for (int sensID = 0; sensID < sensors->numSensors; sensID++) {
-		printf("\tSensor name %s\n", sensors->sensorDescriptions[sensID].sensorDisplayName);
-		//allSensors = g_list_append(allSensors, &(sensors->sensorDescriptions[sensID]));
+	 	printf("\tSensor name %s\n", sensors->sensorDescriptions[sensID].sensorDisplayName);
+	 	allSensors = g_list_append(allSensors, &(sensors->sensorDescriptions[sensID]));
 	}
-	allSensorsPtr = &allSensors;
 }
 
 
 GList *extractAllSensorsFromActions(GList *allActions) {
-	GList *allSensors;
-	printf("!!!!!\n");
-
-	//g_list_foreach(allActions, &extractSensorsFromSingleAction, &allSensors);
+	GList *allSensors = g_list_append(NULL, NULL);
+	g_list_foreach(allActions, &extractSensorsFromSingleAction, allSensors);
+//`	printf("%d sensors collected\n", g_list_length(allSensors));
 	return(allSensors);
 }
 
 ///List of singleSensorDescription_t
 void enureAllSensorDescriptionInDB(GList *allActions) {
-	printf("!!!!!\n");
-	sqlite3 *db;
-	if (sqlite3_open(sqlite_filename, &db) != SQLITE_OK) {
-		logErrorMessage("Error occured opening SQLite DB file: %s\n", sqlite3_errmsg(db));
-		_exit(-1);
-	}
+	printf("Checking if all sensors are in DB.\n");
+	sqlite3 *db = openDbConnection();
 
 	GList *allSensors = extractAllSensorsFromActions(allActions);
-	//g_list_foreach(allSensors, &ensureSensorInDB, (gpointer) db);
+	g_list_foreach(allSensors, &ensureSensorInDB, (gpointer) db);
+	g_list_free(allSensors);
 
-	sqlite3_close(db);
-	printf("!!!!!\n");
+	closeDbConnection(db);
+	printf("Checking done\n");
 
 };
+
+GList *readExternalInputsFromDb() {
+	return NULL;
+}
+
+
+
+
+

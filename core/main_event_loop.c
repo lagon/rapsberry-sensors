@@ -60,8 +60,18 @@ struct mainEventLoopControl_t* el_initializeEventLoop(GList *uninitializedSensor
 	return(eventLoop);
 };
 
-void el_readExternalInputs(struct mainEventLoopControl_t *eventLoop) {
-	return;
+struct inputsChanged_t *transformExternalInputs(GList *externalInputList) {
+	struct inputsChanged_t *externalInputs = (struct inputsChanged_t *) malloc(sizeof(struct inputsChanged_t) + sizeof(struct inputValue_t) * g_list_length(externalInputList));
+	externalInputs->numInputsChanged = g_list_length(externalInputList);
+
+	int inputID = 0;
+	for (GList *item = externalInputList; item != NULL; item = item->next) {
+		struct inputValue_t *inp = (struct inputValue_t *)item->data;
+		memcpy(&(externalInputs->newInputValues[inputID]), inp, sizeof(struct inputValue_t));
+		inputID++;
+	}
+
+	return externalInputs;
 }
 
 void el_registerChangedInputs(GHashTable *changedInputValues, struct inputsChanged_t *changedInputs) {
@@ -71,9 +81,32 @@ void el_registerChangedInputs(GHashTable *changedInputValues, struct inputsChang
 	}
 }
 
+void freeExternalInputs(gpointer data, gpointer userData) {
+	free(data);
+}
+
+void el_readExternalInputs(struct mainEventLoopControl_t *eventLoop) {
+	GList *externalInputsList = readExternalInputsFromDb();
+
+	struct inputsChanged_t *externalInputs = transformExternalInputs(externalInputsList);
+
+	el_registerChangedInputs(eventLoop->changedInputValues, externalInputs);
+	
+	g_list_foreach(externalInputsList, &freeExternalInputs, NULL);
+	g_list_free(externalInputsList);
+
+	for (int inputID = 0; inputID < externalInputs->numInputsChanged; inputID++) {
+		free(externalInputs->newInputValues[inputID].inputName);
+		if (externalInputs->newInputValues[inputID].type == InputTypeString) {
+			free(externalInputs->newInputValues[inputID].stringValue);
+		}
+	}
+	free(externalInputs);
+}
+
 void el_executeAction(struct actionDescriptorStructure_t *action2Execute, struct mainEventLoopControl_t *eventLoop) {
 	const char *sensorName = action2Execute->getActionNameFunction();
-//	printf("About to execute action %s\n", sensorName);
+	printf("About to execute action %s\n", sensorName);
 	gpointer *sensorState = g_hash_table_lookup(eventLoop->allActionsStatuses, sensorName);
 	if (sensorState == NULL) {
 		logErrorMessage("State for sensor \"%s\" was not found. Disabling sensor.\n", sensorName);
