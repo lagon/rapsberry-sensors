@@ -99,3 +99,18 @@ function updateGraphSensor(sensor_id) {
 	shown_sensor_graph = sensor_id;	
 	readDataAndDisplaySensorGraph(shown_sensor_graph, shown_time_frame);
 }
+
+function sendInputValue(input_name_id, input_value, input_type) {
+  httpreq = new XMLHttpRequest();
+  httpreq.open("GET", "setInputValue.php?input_name=" + input_name_id + "&value=" + input_value + "&type=" + input_type, true);
+  httpreq.onreadystatechange=function() {
+    // document.getElementById("log").innerHTML=httpreq.responseText;
+    // alert(httpreq.responseText);
+  }
+  httpreq.send();
+}
+
+function sendLightInputUpdate(light_name, mode_name) {
+  sendInputValue(light_name + "input", mode_name, "string");
+}
+

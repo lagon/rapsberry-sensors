@@ -1,6 +1,6 @@
 <?php
 function startSQLite($filename) {
-	$db = new SQLite3($filename, SQLITE3_OPEN_READONLY);
+	$db = new SQLite3($filename, SQLITE3_OPEN_READWRITE);
 	return $db;
 }
 
@@ -28,7 +28,6 @@ function convertTimeFrameID2usecs($timeFrame) {
 }
 
 function readSensorDataFromSql($db, $sensorName, $timeFrame) {
-
 	$statement = $db->prepare("SELECT sensorDisplayName, measurementTime, sensorValue FROM sensorStats WHERE sensorDisplayName = ? and measurementTime >= ?;");
 	$statement->bindValue(1, $sensorName, SQLITE3_TEXT);
 	$statement->bindValue(2, convertTimeFrameID2usecs($timeFrame), SQLITE3_FLOAT);
@@ -47,7 +46,7 @@ function readSensorDataFromSql($db, $sensorName, $timeFrame) {
     	array_push($res, $row);
 		$row = $result->fetchArray(SQLITE3_ASSOC);
     }
-
+    $statement->close();
     return($res);
 }
 
@@ -67,8 +66,17 @@ function readUniqueSensorNamesFromSql($db) {
     	array_push($res, $row["sensorDisplayName"]);
 		$row = $result->fetchArray(SQLITE3_ASSOC);
     }
-
+    $statement->close();
     return($res);	
+}
+
+function setInputValue($db, $inputName, $stringValue, $doubleValue) {
+	$statement = $db->prepare("INSERT INTO inputs (inputName, stringValue, doubleValue) VALUES (?, ?, ?);");
+	$statement->bindValue(1, $inputName,   SQLITE3_TEXT);
+	$statement->bindValue(2, $stringValue, SQLITE3_TEXT);
+	$statement->bindValue(3, $doubleValue, SQLITE3_FLOAT);
+	$statement->execute();
+	$statement->close();
 }
 
 function closeSQLite($db) {
@@ -118,5 +126,10 @@ function getAllSensorsFromDB() {
 	closeSQLite($db);
 	return $sensorNames;
 }
+
+function notifySensorRunner() {
+	//fopen("/tmp", mode)
+}
+
 
 ?>
