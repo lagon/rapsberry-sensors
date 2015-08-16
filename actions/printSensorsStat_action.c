@@ -21,7 +21,6 @@ struct allSensorsDescription_t print_allSensors = {
 	.sensorDescriptions = {}
 };
 
-
 struct actionReturnValue_t *print_initActionFunction() {
 	struct printActionStatus *stat = (struct printActionStatus *)malloc(sizeof(struct printActionStatus));
 	stat->last_printout = getCurrentUSecs();
@@ -29,7 +28,7 @@ struct actionReturnValue_t *print_initActionFunction() {
 	print_returnValue.actionErrorStatus = 0;
 	print_returnValue.usecsToNextInvocation = printSensorInterval;
 	print_returnValue.waitOnInputMode = WAIT_TIME_PERIOD;
-	print_returnValue.changedInputs = &noInputsChanged;
+	print_returnValue.changedInputs = generateNoInputsChanged();
 
 	return &print_returnValue;
 }
@@ -41,6 +40,7 @@ void printSensorFnc(gpointer key, gpointer value, gpointer userData) {
 
 struct actionReturnValue_t *print_actionFunction(void *status, GHashTable* measurementOutput, GHashTable *sensorStatus) {
 	g_hash_table_foreach(measurementOutput, &printSensorFnc, NULL);
+	print_returnValue.changedInputs = generateNoInputsChanged();
 	return &print_returnValue;
 }
 

@@ -24,8 +24,9 @@
 // EXPERIMENTAL --------- 
 // #include "led_experiments.h"
 // #include "ina219_power_monitor.h"
-// #include "ssd1306_oled_display.h"
+//#include "ssd1306_oled_display.h"
 #include "mcp9808_temperature.h"
+#include "mtk3339-gps.h"
 
 // GHashTable *sensorStatus;
 // GHashTable *actionOutputs;
@@ -59,7 +60,7 @@ void initialize() {
     GList *allActions = getAllActions();
     eventLoop = el_initializeEventLoop(allActions);
 
-    enureAllSensorDescriptionInDB(allActions);
+    //enureAllSensorDescriptionInDB(allActions);
 
     // aq = aq_initQueue();
 
@@ -124,16 +125,13 @@ void initialize() {
 
 
 int main(int argc, char **argv) {
+    // ssd1306_demo();
+    mtk3339_demo();
 
-    //Syslog start
-    openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
+    // //Syslog start
+    // openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
-    initialize();
-    printf("1112!!!!!\n");
-
-    el_runEventLoop(eventLoop);
-//    run_led_experiment();
-
-
-
+    // initialize();    
+    // el_runEventLoop(eventLoop);
+    return 0;
 }
