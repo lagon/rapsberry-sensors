@@ -44,7 +44,7 @@ struct actionReturnValue_t *mcp9808_initActionFunction() {
 	mcp9808_returnStructure.actionErrorStatus = 0;
 	mcp9808_returnStructure.usecsToNextInvocation = mcp9808_temperatureMeasurementTime;
 	mcp9808_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	mcp9808_returnStructure.changedInputs = &noInputsChanged;
+	mcp9808_returnStructure.changedInputs = generateNoInputsChanged();
 
 	return &mcp9808_returnStructure;
 }
@@ -54,7 +54,7 @@ struct actionReturnValue_t* mcp9808_actionFunction(gpointer mcp9808SensorStat, G
 
 	mcp9808_returnStructure.actionErrorStatus = 0;
 	mcp9808_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	mcp9808_returnStructure.changedInputs = &noInputsChanged;
+	mcp9808_returnStructure.changedInputs = generateNoInputsChanged();
 
 	if (mcp9808->state == MCP9808_IDLE) {
 		mcp9808_startMeasuring(mcp9808->device);

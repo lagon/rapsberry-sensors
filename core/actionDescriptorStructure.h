@@ -76,8 +76,8 @@ struct actionDescriptorStructure_t {
 
 
 //Convenience values for empty inputs/changed inputs...
-extern struct inputsChanged_t noInputsChanged;
-
 extern struct inputNotifications_t noInputsToWatch;
+
+struct inputsChanged_t *generateNoInputsChanged();
 
 #endif

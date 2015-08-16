@@ -38,7 +38,7 @@ struct actionReturnValue_t *sqliteStore_initActionFunction() {
 	sqliteSave_returnStructure.actionErrorStatus = 0;
 	sqliteSave_returnStructure.usecsToNextInvocation = sqliteSensorInterval;
 	sqliteSave_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	sqliteSave_returnStructure.changedInputs = &noInputsChanged;
+	sqliteSave_returnStructure.changedInputs = generateNoInputsChanged();
 
 	sql->db = openDbConnection();
 
@@ -86,7 +86,7 @@ struct actionReturnValue_t *sqliteStore_actionFunction(gpointer rawSensorStatus,
 	sqliteSave_returnStructure.actionErrorStatus = 0;
 	sqliteSave_returnStructure.usecsToNextInvocation = sqliteSensorInterval;
 	sqliteSave_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	sqliteSave_returnStructure.changedInputs = &noInputsChanged;
+	sqliteSave_returnStructure.changedInputs = generateNoInputsChanged();
 
 	return &sqliteSave_returnStructure;
 }

@@ -38,7 +38,7 @@ struct actionReturnValue_t* h21df_initActionFunction() {
 		h21df_returnStructure.actionErrorStatus = 0;
 		h21df_returnStructure.usecsToNextInvocation = h21_measurement_offset;
 		h21df_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-		h21df_returnStructure.changedInputs = &noInputsChanged;
+		h21df_returnStructure.changedInputs = generateNoInputsChanged();
 		return &h21df_returnStructure;
 	} else {
 		syslog(LOG_ERR, "Unable to initiate h21df humidity sensor.");
@@ -57,7 +57,7 @@ struct actionReturnValue_t* h21df_actionFunction(gpointer rawSensorStatus, GHash
 		h21df_returnStructure.actionErrorStatus = -1;
 		h21df_returnStructure.usecsToNextInvocation = -1;
 		h21df_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-		h21df_returnStructure.changedInputs = &noInputsChanged;
+		h21df_returnStructure.changedInputs = generateNoInputsChanged();
 		return &h21df_returnStructure;
 	};
 
@@ -82,7 +82,7 @@ struct actionReturnValue_t* h21df_actionFunction(gpointer rawSensorStatus, GHash
 	h21df_returnStructure.actionErrorStatus = 0;
 	h21df_returnStructure.usecsToNextInvocation = h21_measurement_offset;
 	h21df_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	h21df_returnStructure.changedInputs = &noInputsChanged;
+	h21df_returnStructure.changedInputs = generateNoInputsChanged();
 
 	return &h21df_returnStructure;
 }

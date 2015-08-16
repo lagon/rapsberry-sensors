@@ -31,7 +31,7 @@ struct actionReturnValue_t bmp183_returnStructure;
 struct actionReturnValue_t* bmp183_initActionFunction() {
 	bmp183_returnStructure.usecsToNextInvocation = bmp183_PressureSensorRefresh;
 	bmp183_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	bmp183_returnStructure.changedInputs = &noInputsChanged;
+	bmp183_returnStructure.changedInputs = generateNoInputsChanged();
 
 	struct bmp183_sensorStat *status = (struct bmp183_sensorStat *) malloc(sizeof(struct bmp183_device));
 	status->device = bmp183_init(0, 0, 1000000, BMP183_ULTRA_HIGH_RESOLUTION);
@@ -99,7 +99,7 @@ struct actionReturnValue_t* bmp183_actionFunction(gpointer rawSensorStatus, GHas
 	bmp183_returnStructure.actionErrorStatus = 0;
 	bmp183_returnStructure.usecsToNextInvocation = timeToNextInvocation;
 	bmp183_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	bmp183_returnStructure.changedInputs = &noInputsChanged;
+	bmp183_returnStructure.changedInputs = generateNoInputsChanged();
 
 	return &bmp183_returnStructure;
 }

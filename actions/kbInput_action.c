@@ -10,12 +10,13 @@
 
 
 enum kbInput_blockingState_t {kbInput_BlockingTerminal, kbInput_NonBlockingTerminal} bmp183_measurementState;
-const long long kbInput_KeyboardCheckingTime = 10 * 1000 * 1000; //500 ms
+const long long kbInput_KeyboardCheckingTime = 1 * 1000 * 1000; //500 ms
 const char *kbInput_actionName = "kbInputAction";
 const char *keyboardInputName = __keyboardInputName;
 const int stdinFileID = 0;
 
 struct actionReturnValue_t kbInput_returnStructure;
+struct inputsChanged_t *keyInInput;
 
 struct allSensorsDescription_t kbInput_noSensors = {
 	.numSensors = 0,
@@ -58,7 +59,7 @@ struct actionReturnValue_t* kbInput_initActionFunction() {
 	kbInput_returnStructure.actionErrorStatus = 0;
 	kbInput_returnStructure.usecsToNextInvocation = kbInput_KeyboardCheckingTime;
 	kbInput_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	kbInput_returnStructure.changedInputs = &noInputsChanged;
+	kbInput_returnStructure.changedInputs = generateNoInputsChanged();
 
 	return &kbInput_returnStructure;
 }
@@ -72,14 +73,16 @@ struct allSensorsDescription_t* kbInput_actionStateAllSensors() {
 }
 
 struct inputsChanged_t* createInputStructure(char ch) {
-	struct inputsChanged_t* inpCh = (struct inputsChanged_t*) malloc(sizeof(struct inputsChanged_t) + sizeof(struct inputValue_t));
-	inpCh->numInputsChanged = 1;
-	inpCh->newInputValues[0].inputName = keyboardInputName;
-	inpCh->newInputValues[0].valueMeasuredTimestamp = getCurrentUSecs();
-	inpCh->newInputValues[0].type = InputTypeInteger;
-	inpCh->newInputValues[0].integerValue = ch;
-
-	return(inpCh);
+	keyInInput = (struct inputsChanged_t*) malloc(sizeof(struct inputsChanged_t) + sizeof(struct inputValue_t));
+	keyInInput->numInputsChanged = 1;
+	keyInInput->newInputValues[0].inputName = (char *)malloc(sizeof(char) * (strlen(keyboardInputName) + 1));
+	strcpy(keyInInput->newInputValues[0].inputName, keyboardInputName);
+	keyInInput->newInputValues[0].valueMeasuredTimestamp = getCurrentUSecs();
+	keyInInput->newInputValues[0].type = InputTypeString;
+	keyInInput->newInputValues[0].stringValue = (char *)malloc(2 * sizeof(char));
+	keyInInput->newInputValues[0].stringValue[0] = ch;
+	keyInInput->newInputValues[0].stringValue[1] = '\0';
+	return(keyInInput);
 }
 
 struct actionReturnValue_t* kbInput_actionFunction(gpointer rawSensorStatus, GHashTable* measurementOutput, GHashTable *allInputs) {
@@ -90,15 +93,17 @@ struct actionReturnValue_t* kbInput_actionFunction(gpointer rawSensorStatus, GHa
 	
 
 	if (isKbHit()) {
-		char ch = ' ';
-		read(stdinFileID, &ch, 1);
-//		printf("Char read from keyboard %c\n", ch);
+		char ch;
+		char buffer[1024];
+		printf("Readin...\n");
+		int readBytes = read(stdinFileID, buffer, 1024);
+		printf("Chars read from keyboard %d\n", readBytes);
+		ch = buffer[readBytes-1];
+		printf("Char reported: %c\n", ch);
+
 		kbInput_returnStructure.changedInputs = createInputStructure(ch);
-		char *lastChar = (char *)rawSensorStatus;
-		*lastChar = ch;
-		g_hash_table_replace(allInputs, keyboardInputName, lastChar);
 	} else {
-		kbInput_returnStructure.changedInputs = &noInputsChanged;
+		kbInput_returnStructure.changedInputs = generateNoInputsChanged();
 //		printf("No key was pressed\n");
 	}
 

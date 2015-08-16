@@ -16,14 +16,15 @@ struct allSensorsDescription_t ledDriver_allSensors = {
 struct actionReturnValue_t ledDriver_returnStructure;
 
 struct inputNotifications_t ledDrive_watchedInputs = {
-	.numInputsWatched = 1,
-	.watchedInputs = {__keyboardInputName}
+	.numInputsWatched = 2,
+	.watchedInputs = {"chodba_webInput", __keyboardInputName}
 };
 
 struct ledDriver_sensorStat {
 	int spiDevice;
 	struct allLedControlStruct *ledctrl;
 	long long lastKBInputUpdate;
+	long long lastWebUpdate;
 	uint16_t overallBrightness;
 } ledDriver_sensorStat;
 
@@ -62,7 +63,7 @@ void setReturnStructure(struct actionReturnValue_t *returnStructure, struct ledD
 	returnStructure->actionErrorStatus = 0;
 	returnStructure->usecsToNextInvocation = 500 * 1000;
 	returnStructure->waitOnInputMode = WAIT_ON_INPUT;
-	returnStructure->changedInputs = &noInputsChanged;
+	returnStructure->changedInputs = generateNoInputsChanged();
 	return;
 }
 
@@ -71,33 +72,59 @@ struct inputNotifications_t* ledDriver_actionStateWatchedInputs() {
 	return &ledDrive_watchedInputs;
 }
 
+char *checkNewInput(char *inputName, long long lastSeenUpdate, GHashTable* allInputs) {
+	struct inputValue_t *input = (struct inputValue_t *)g_hash_table_lookup(allInputs, inputName);
+	if (input == NULL) {
+		return NULL;
+	}
+	if (input->valueMeasuredTimestamp <= lastSeenUpdate) {
+		return NULL;
+	}
+	return input->stringValue;
+}
+
 struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GHashTable* measurementOutput, GHashTable* allInputs) {
-	struct inputValue_t *keyboardInput = (struct inputValue_t *)g_hash_table_lookup(allInputs, __keyboardInputName);
 	struct ledDriver_sensorStat *state = (struct ledDriver_sensorStat *) rawSensorState;
 
-	if (keyboardInput == NULL) {
-//		logErrorMessage("No keyboard input was defined...", "");
+	char *keyboardCmd = checkNewInput(__keyboardInputName, state->lastKBInputUpdate, allInputs);
+	char *webCmd      = checkNewInput("chodba_webInput",   state->lastWebUpdate, allInputs);
+
+	if ((keyboardCmd == NULL) && (webCmd == NULL)) {
+		printf("Nothing to do!\n");
 		setReturnStructure(&ledDriver_returnStructure, state);
 		return &ledDriver_returnStructure;
 	}
-
-	if (keyboardInput->valueMeasuredTimestamp <= state->lastKBInputUpdate) {
-		setReturnStructure(&ledDriver_returnStructure, state);
-		return &ledDriver_returnStructure;
+	
+	if (keyboardCmd != NULL) {
+		printf("Keyboard command is: %s\n", keyboardCmd);
+		if (strcmp(keyboardCmd, "+") == 0) {
+			if (state->overallBrightness < 0xEFFF) {
+				state->overallBrightness = state->overallBrightness + 0x0200;
+			} else {
+				state->overallBrightness = 0xFFFF;
+			}
+		} else if (strcmp(keyboardCmd, "-") == 0) {
+			if (state->overallBrightness > 0x1000) {
+				state->overallBrightness = state->overallBrightness - 0x0200;
+			} else {
+				state->overallBrightness = 0x0000;
+			}
+		}
+		state->lastKBInputUpdate = getCurrentUSecs();
 	}
 
-	char key = keyboardInput->integerValue;
-	printf("LED DRIVER - key read from input was - %c\n", key);
-	if (key == '+') {
-		state->overallBrightness = 0xFFFF;
-		printf("UP\n");
-		// state->overallBrightness += 1;
-		// state->overallBrightness = state->overallBrightness > 10 ? 10 : state->overallBrightness;
-	} else if (key == '-') {
-		state->overallBrightness = 0x0000;
-		printf("DOWN\n");
-		// state->overallBrightness -= 1;
-		// state->overallBrightness = state->overallBrightness < 0 ? 0 : state->overallBrightness;
+	if (webCmd != NULL) {
+		printf("Web command is: %s\n", webCmd);
+		if (strcmp(webCmd, "full on") == 0) {
+			state->overallBrightness = 0xFFFF;
+		} else if (strcmp(webCmd, "full off") == 0) {
+			state->overallBrightness = 0x0000;
+		} else if (strcmp(webCmd, "half way") == 0) {
+			state->overallBrightness = 0x8000;
+		} else if (strcmp(webCmd, "5 minute delay") == 0) {
+			state->overallBrightness = 0xFFFF;
+		}
+		state->lastWebUpdate = getCurrentUSecs();
 	}
 
 	for (int ledID = 0; ledID < numLeds; ledID++) {

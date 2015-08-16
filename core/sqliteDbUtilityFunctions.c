@@ -13,9 +13,12 @@
 #include "utilityFunctions.h"
 #include "sensorDescriptionStructure.h"
 
-static const char *sqlCreateSensorNameTable = "create table sensorNames (sensorID varchar not null, sensorDisplayName varchar, sensorUnits varchar, sensorValueName varchar, primary key (sensorID));";
-static const char *sqlCreateSensorMeasurementTable = "create table sensorStats (sensorID varchar not null, sensorDisplayName varchar, measurementTime bigint not null, sensorValue double, primary key (sensorID, measurementTime));";
-static const char *sqlCreateInputsTable = "create table inputs (inputName varchar not null, stringValue varchar, doubleValue double, primary key (inputName));";
+const char *sqlCreateSensorNameTable        = "create table sensorNames (sensorID varchar not null, sensorDisplayName varchar, sensorUnits varchar, sensorValueName varchar, primary key (sensorID));";
+const char *sqlCreateSensorMeasurementTable = "create table sensorStats (sensorID varchar not null, sensorDisplayName varchar, measurementTime bigint not null, sensorValue double, primary key (sensorID, measurementTime));";
+const char *sqlCreateInputsTable            = "create table inputs (inputName varchar not null, stringValue varchar, doubleValue double, primary key (inputName));";
+
+const char *sqlRemoveInputValuesFromDB      = "DELETE FROM inputs;";
+const char *sqlReadInputValuesFromDB        = "SELECT inputName, stringValue, doubleValue FROM inputs;";
 
 const char *sqlite_filename = "./data/sensor_stats.db";
 
@@ -156,10 +159,49 @@ void enureAllSensorDescriptionInDB(GList *allActions) {
 };
 
 GList *readExternalInputsFromDb() {
-	return NULL;
+	sqlite3 *db = openDbConnection();
+	sqlite3_stmt *preparedStmt;
+
+	if (sqlite3_prepare_v2(db, sqlReadInputValuesFromDB, -1, &preparedStmt, NULL) != SQLITE_OK) {
+		logErrorMessage("Error occured compiling prepared statement: %s\n", sqlite3_errmsg(db));
+		sqlite3_exec(db, sqlRemoveInputValuesFromDB	, NULL, NULL, NULL);
+		closeDbConnection(db);
+		return NULL;
+	}
+
+	GList *inputs = NULL;
+	while(sqlite3_step(preparedStmt) == SQLITE_ROW) {
+		struct inputValue_t *inputValue = (struct inputValue_t *) malloc(sizeof(struct  inputValue_t));
+		char *input_name = sqlite3_column_text(preparedStmt, 0);
+
+		if ((sqlite3_column_type(preparedStmt, 1) != SQLITE_NULL) && (sqlite3_column_type(preparedStmt, 2) != SQLITE_NULL)) {
+			logErrorMessage("Input %s has both string and double value, do not know what to do....\n", input_name);
+			free(inputValue);
+			continue;
+		} else if (sqlite3_column_type(preparedStmt, 1) != SQLITE_NULL) {
+			inputValue->type = InputTypeString;
+			char * string_value = sqlite3_column_text(preparedStmt, 1);
+			inputValue->stringValue = (char *) malloc((strlen(string_value) + 1) * sizeof(char));
+			strcpy(inputValue->stringValue, string_value);
+			printf("Reading input \'%s\' with value \'%s\'\n", input_name, inputValue->stringValue);
+		} else if (sqlite3_column_type(preparedStmt, 2) != SQLITE_NULL) {
+			inputValue->type = InputTypeDouble;
+			inputValue->doubleValue = sqlite3_column_double(preparedStmt, 2);
+			printf("Reading input \'%s\' with value \'%f\'\n", input_name, inputValue->doubleValue);
+		} else {
+			logErrorMessage("Input %s has no data attached to it.\n", input_name);
+			free(inputValue);
+			continue;
+		}
+
+		inputValue->inputName = (char *)malloc(sizeof(char) * (strlen(input_name)+1));
+		strcpy(inputValue->inputName, input_name);
+		inputValue->valueMeasuredTimestamp = getCurrentUSecs();
+		
+		inputs = g_list_append(inputs, inputValue);
+	}
+
+	sqlite3_exec(db, sqlRemoveInputValuesFromDB, NULL, NULL, NULL);
+	closeDbConnection(db);
+	return(inputs);
 }
-
-
-
-
-
