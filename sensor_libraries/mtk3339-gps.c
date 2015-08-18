@@ -47,6 +47,10 @@ struct ggaDetails_t {
 	double altitudeInM;
 };
 
+struct vtgDetails_t {
+
+};
+
 struct nmea_t {
 	enum nmea_sentence_type_enum nmea_sentence_type;
 	union {
@@ -54,7 +58,7 @@ struct nmea_t {
 		// struct gsaDetails_t gsaDetails;
 		// struct gsvDetails_t gsvDetails;
 		// struct rmcDetails_t rmcDetails;
-		// struct vtgDetails_t vtgDetails;
+		struct vtgDetails_t vtgDetails;
 	};
 };
 
@@ -71,6 +75,7 @@ int mtk3339_setSerialSpeed(int port, speed_t communicationSpeed);
 int mtk3339_coldStart(struct mtk3339_gps_device *device);
 int mtk3393_enableAicMode(struct mtk3339_gps_device *device);
 int mtk3339_setNmeaUpdateRate(struct mtk3339_gps_device *device, uint32_t updateInterval);
+int mtk3339_setDatumToWGS84(struct mtk3339_gps_device *device);
 char *mtk3339_getSingleCommand(struct mtk3339_gps_device *device);
 int findFirstCharInString(const char *string, char toFind);
 int mtk3339_nmeaValidateChecksum(char *singleSentence);
@@ -91,7 +96,7 @@ struct mtk3339_gps_device *mtk3339_initialise(char *portName) {
 	// mtk3339_coldStart(device);
 	mtk3393_enableAicMode(device);
 	mtk3339_setNmeaUpdateRate(device, 5000);
-	mtk3339_setDatumToWGS84(struct mtk3339_gps_device *device);
+	mtk3339_setDatumToWGS84(device);
 
 	return device;
 }
@@ -364,6 +369,36 @@ struct nmea_t *nmea_parse_ggaSentence(char *unparsedSentencePart) {
 
 	return gga;
 }
+
+struct nmea_t *nmea_parse_vtgSentence(char *unparsedSentencePart) {
+	struct nmea_t *vtg      = (struct nmea_t *) malloc(sizeof(struct nmea_t));
+	gga->nmea_sentence_type = VTG;
+
+	char *trueHeadingStr        = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *trueHeadingRefStr     = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *magneticHeadingStr    = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *magneticHeadingRefStr = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *speedInKnotsStr       = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *speedInKnotsUnitsStr  = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *speedInKmphStr        = nmea_GetNextField(&unparsedSentencePart, ',');
+	char *speedInKmphUnitsStr   = nmea_GetNextField(&unparsedSentencePart, ',');
+
+	char *check;
+	vtg->vtgDetails.trueHeading       = strtod(trueHeadingStr, &check);
+	if (check == trueHeadingStr) {vtg->vtgDetails.trueHeading = INFINITY};
+
+	vtg->vtgDetails.magneticHeading   = strtod(magneticHeadingStr, &check);
+	if (check == magneticHeadingStr) {vtg->vtgDetails.magneticHeading = INFINITY};
+	
+	vtg->vtgDetails.knotsPerHour      = strtod(speedInKnotsStr, &check);
+	if (check == speedInKnotsStr) {vtg->vtgDetails.knotsPerHour= INFINITY};
+	
+	vtg->vtgDetails.kilometresPerHour = strtod(speedInKmphStr, &check);
+	if (check == speedInKmphStr) {vtg->vtgDetails.kilometresPerHour = INFINITY};
+
+	return vtg;
+}
+
 
 struct nmea_t *nmea_parseSentence(char *singleSentence) {
 	if (strncmp("$GP", singleSentence, 3) != 0) {
