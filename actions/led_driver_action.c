@@ -3,7 +3,9 @@
 #include "kbInput_action.h"
 #include "utilityFunctions.h"
 #include <glib.h>
-
+#include "pattern_queue.h"
+#include "all_led_patterns.h"
+#include <stdarg.h>
 
 const char *ledDriverActionName = "LedDriveAction";
 const int numLeds = 12;
@@ -25,11 +27,18 @@ struct ledDriver_sensorStat {
 	struct allLedControlStruct *ledctrl;
 	long long lastKBInputUpdate;
 	long long lastWebUpdate;
-	uint16_t overallBrightness;
+	uint16_t currentBrightness;
+	struct pa_Queue *ledPatternsQueue;
+	int ledPatternTimeStep;
 } ledDriver_sensorStat;
 
 void setReturnStructure(struct actionReturnValue_t *returnStructure, struct ledDriver_sensorStat *sensorState);
 
+void setLedsAccordingToPattern(struct allLedControlStruct *ledctrl, struct pa_LedStatesResults *pattern) {
+	for (int ledID = 0; ledID < ledctrl->numLeds; ledID++) {
+		setOneGrayscaleLed(ledctrl, ledID, pattern->ledIntensities[ledID]);
+	}
+}
 
 struct actionReturnValue_t* ledDriver_initActionFunction() {
 	int spidev = spi_initDevice(0, 0);
@@ -52,7 +61,8 @@ struct actionReturnValue_t* ledDriver_initActionFunction() {
 	led->spiDevice = spidev;
 	led->ledctrl = ledctrl;
 	led->lastKBInputUpdate = 0;
-	led->overallBrightness = 0;
+	led->currentBrightness = 0;
+	led->ledPatternsQueue = pa_initialize(numLeds);
 
 	setReturnStructure(&ledDriver_returnStructure, led);
 	return &ledDriver_returnStructure;
@@ -65,6 +75,19 @@ void setReturnStructure(struct actionReturnValue_t *returnStructure, struct ledD
 	returnStructure->waitOnInputMode = WAIT_ON_INPUT;
 	returnStructure->changedInputs = generateNoInputsChanged();
 	return;
+}
+
+void setReturnStructureWithPatterns(struct actionReturnValue_t *returnStructure, struct ledDriver_sensorStat *sensorState, long long nextExpectedPatternStepTime) {
+	returnStructure->sensorState = (gpointer) sensorState;
+	returnStructure->actionErrorStatus = 0;
+	returnStructure->usecsToNextInvocation = nextExpectedPatternStepTime;
+	if (nextExpectedPatternStepTime > 0) {
+		returnStructure->waitOnInputMode = WAIT_TIME_PERIOD_OR_INPUT;
+	} else {
+		returnStructure->waitOnInputMode = WAIT_ON_INPUT;		
+	}
+	returnStructure->changedInputs = generateNoInputsChanged();
+	return;	
 }
 
 
@@ -83,6 +106,46 @@ char *checkNewInput(char *inputName, long long lastSeenUpdate, GHashTable* allIn
 	return input->stringValue;
 }
 
+void setupLedPatternsToQueue(struct ledDriver_sensorStat *state, uint16_t initialBrightness, uint16_t targetBrightness, int numPatternsToAdd, ...) {
+	va_list valist;
+	pa_resetQueue(state->ledPatternsQueue);
+	va_start(valist, numPatternsToAdd);
+	for (int patternID = 0; patternID < numPatternsToAdd; patternID++) {
+		pattern_action pattern = va_arg(valist, pattern_action);
+		pa_addNextLedAction(state->ledPatternsQueue, pattern, initialBrightness, targetBrightness);
+	}
+	va_end(valist);
+	state->ledPatternTimeStep = 0;
+}
+
+long long executePatternStep(struct ledDriver_sensorStat *state) {
+	if (pa_isQueueEmpty(state->ledPatternsQueue)) {
+		return pa_neverCallAgain;
+	}
+
+	struct pa_LedStatesResults *patternStep = pa_executeCurrentLedAction(state->ledPatternsQueue, state->ledPatternTimeStep);
+
+	long long timeToNextInvodation = patternStep->nextInvocation;
+	if (timeToNextInvodation == pa_wasLastStep) {
+		pa_getToNextLedAction(state->ledPatternsQueue);
+		state->ledPatternTimeStep = 0;
+		timeToNextInvodation = 500 * 1000;
+	} else if (timeToNextInvodation == pa_neverCallAgain) {
+		pa_resetQueue(state->ledPatternsQueue);
+	} else if (timeToNextInvodation == pa_emptyActionQueu) {
+		pa_destroyLedStateResults(patternStep);
+		return -1;
+	} else {
+		state->ledPatternTimeStep = state->ledPatternTimeStep + 1;
+	}
+	setLedsAccordingToPattern(state->ledctrl, patternStep);
+	sendOutLedDataDefaults(state->ledctrl, state->spiDevice);
+
+	state->currentBrightness = patternStep->ledIntensities[0];
+	pa_destroyLedStateResults(patternStep);
+	return timeToNextInvodation;
+}
+
 struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GHashTable* measurementOutput, GHashTable* allInputs) {
 	struct ledDriver_sensorStat *state = (struct ledDriver_sensorStat *) rawSensorState;
 
@@ -90,51 +153,45 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 	char *webCmd      = checkNewInput("chodba_webInput",   state->lastWebUpdate, allInputs);
 
 	if ((keyboardCmd == NULL) && (webCmd == NULL)) {
-		printf("Nothing to do!\n");
-		setReturnStructure(&ledDriver_returnStructure, state);
-		return &ledDriver_returnStructure;
+		if (pa_isQueueEmpty(state->ledPatternsQueue)) {
+			setReturnStructure(&ledDriver_returnStructure, state);
+		}  else {
+			long long nextExpectedPatternStepTime = executePatternStep(state);
+			setReturnStructureWithPatterns(&ledDriver_returnStructure, state, nextExpectedPatternStepTime);
+		}
+		return &ledDriver_returnStructure;	
 	}
 	
 	if (keyboardCmd != NULL) {
-		printf("Keyboard command is: %s\n", keyboardCmd);
 		if (strcmp(keyboardCmd, "+") == 0) {
-			if (state->overallBrightness < 0xEFFF) {
-				state->overallBrightness = state->overallBrightness + 0x0200;
-			} else {
-				state->overallBrightness = 0xFFFF;
-			}
-		} else if (strcmp(keyboardCmd, "-") == 0) {
-			if (state->overallBrightness > 0x1000) {
-				state->overallBrightness = state->overallBrightness - 0x0200;
-			} else {
-				state->overallBrightness = 0x0000;
-			}
+			uint16_t nextBrightness = state->currentBrightness > 0xEFFF ?  0xFFFF : state->currentBrightness + 0x0200;
+		else if (strcmp(keyboardCmd, "-") == 0) {
+			uint16_t nextBrightness = state->currentBrightness < 0x1000 ?  0x0000 : state->currentBrightness - 0x0200;
+		} else {
+			uint16_t nextBrightness = state->currentBrightness;
 		}
+		setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, nextBrightness,  2, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
 		state->lastKBInputUpdate = getCurrentUSecs();
 	}
 
 	if (webCmd != NULL) {
 		printf("Web command is: %s\n", webCmd);
 		if (strcmp(webCmd, "full on") == 0) {
-			state->overallBrightness = 0xFFFF;
+			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0xFFFF,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
 		} else if (strcmp(webCmd, "full off") == 0) {
-			state->overallBrightness = 0x0000;
+			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0x0000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
 		} else if (strcmp(webCmd, "half way") == 0) {
-			state->overallBrightness = 0x8000;
+			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0x8000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
 		} else if (strcmp(webCmd, "5 minute delay") == 0) {
-			state->overallBrightness = 0xFFFF;
+			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0x0000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
 		}
 		state->lastWebUpdate = getCurrentUSecs();
 	}
 
-	for (int ledID = 0; ledID < numLeds; ledID++) {
-		setOneGrayscaleLed(state->ledctrl, ledID, state->overallBrightness);
-	}
-	sendOutLedDataDefaults(state->ledctrl, state->spiDevice);
 
+	long long nextExpectedPatternStepTime = executePatternStep(state);
+	setReturnStructureWithPatterns(&ledDriver_returnStructure, state, nextExpectedPatternStepTime);
 
-	state->lastKBInputUpdate = getCurrentUSecs();
-	setReturnStructure(&ledDriver_returnStructure, state);
 	return &ledDriver_returnStructure;	
 }
 
