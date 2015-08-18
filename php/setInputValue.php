@@ -1,11 +1,23 @@
 <?php
+
+function notifySensorRunner() {
+	$notificationFile = "/tmp/ra_sen_notification_pipe";
+	$f = fopen($notificationFile, "w");
+	echo($f);
+	echo(fwrite($f, "1", 1));
+	echo(fclose($f));
+}
+
+
 #$header = "Content-Type: text";
 #header($header);
 
+echo "AAAAA";
+
 include("utility_functions.php");
 $dbHandle = startSQLite('data/sensor_stats.db');
-$stringValue = null;
-$doubleValue = null;
+$stringValue = NULL;
+$doubleValue = NULL;
 if ($_GET["type"] == "string") {
 	$stringValue = $_GET["value"];
 } else if ($_GET["type"] == "double") {

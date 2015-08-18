@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<title>Sensors</title>
 	<link rel="stylesheet" href="style.css">
 	<script src="d3.v3.js"> </script>

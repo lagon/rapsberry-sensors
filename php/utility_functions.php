@@ -102,7 +102,7 @@ function generateAllLightModes() {
 		array("name" => "chodba", "mode" => "full on"),
 		array("name" => "chodba", "mode" => "full off"),
 		array("name" => "chodba", "mode" => "half way"),
-		array("name" => "chodba", "mode" => "1 minute delay"),
+		array("name" => "chodba", "mode" => "5 minute delay"),
 	);
 }
 
@@ -126,10 +126,5 @@ function getAllSensorsFromDB() {
 	closeSQLite($db);
 	return $sensorNames;
 }
-
-function notifySensorRunner() {
-	//fopen("/tmp", mode)
-}
-
 
 ?>

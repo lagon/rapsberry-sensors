@@ -104,13 +104,16 @@ function sendInputValue(input_name_id, input_value, input_type) {
   httpreq = new XMLHttpRequest();
   httpreq.open("GET", "setInputValue.php?input_name=" + input_name_id + "&value=" + input_value + "&type=" + input_type, true);
   httpreq.onreadystatechange=function() {
-    // document.getElementById("log").innerHTML=httpreq.responseText;
-    // alert(httpreq.responseText);
+    if (httpreq.readyState==4 && httpreq.status==200) {
+      document.getElementById("log").innerHTML=httpreq.responseText;
+    } else {
+      document.getElementById("log").innerHTML=httpreq.statusText;
+    }
   }
   httpreq.send();
 }
 
 function sendLightInputUpdate(light_name, mode_name) {
-  sendInputValue(light_name + "input", mode_name, "string");
+  sendInputValue(light_name + "_webInput", mode_name, "string");
 }
 
