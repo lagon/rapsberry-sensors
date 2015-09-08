@@ -99,10 +99,11 @@ function readActualValues($filename) {
 
 function generateAllLightModes() {
 	return array(
-		array("name" => "chodba", "mode" => "full on"),
-		array("name" => "chodba", "mode" => "full off"),
-		array("name" => "chodba", "mode" => "half way"),
-		array("name" => "chodba", "mode" => "5 minute delay"),
+		array("name" => "chodba", "mode" => "Full On"),
+		array("name" => "chodba", "mode" => "Full Off"),
+		array("name" => "chodba", "mode" => "Half Way"),
+		array("name" => "chodba", "mode" => "5 Minute Delay"),
+		array("name" => "chodba", "mode" => "Night Mode")
 	);
 }
 

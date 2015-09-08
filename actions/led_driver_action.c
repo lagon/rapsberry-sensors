@@ -29,15 +29,16 @@ struct ledDriver_sensorStat {
 	long long lastWebUpdate;
 	uint16_t currentBrightness;
 	struct pa_Queue *ledPatternsQueue;
-	int ledPatternTimeStep;
 } ledDriver_sensorStat;
 
 void setReturnStructure(struct actionReturnValue_t *returnStructure, struct ledDriver_sensorStat *sensorState);
 
 void setLedsAccordingToPattern(struct allLedControlStruct *ledctrl, struct pa_LedStatesResults *pattern) {
-	for (int ledID = 0; ledID < ledctrl->numLeds; ledID++) {
+	for (int ledID = 0; ledID < pattern->totalLeds; ledID++) {
+		printf(" ** %X", pattern->ledIntensities[ledID]);
 		setOneGrayscaleLed(ledctrl, ledID, pattern->ledIntensities[ledID]);
 	}
+	printf("\n");
 }
 
 struct actionReturnValue_t* ledDriver_initActionFunction() {
@@ -47,7 +48,7 @@ struct actionReturnValue_t* ledDriver_initActionFunction() {
 		exit(-1);
 	}
 
-	struct allLedControlStruct *ledctrl = initiateLEDControls(1);
+	struct allLedControlStruct *ledctrl = initiateLEDControls(3);
 	setGlobalBrightness(ledctrl, 255);
 	struct ledPWMSettings led_settings;
 	led_settings.blank  = 0;
@@ -111,11 +112,10 @@ void setupLedPatternsToQueue(struct ledDriver_sensorStat *state, uint16_t initia
 	pa_resetQueue(state->ledPatternsQueue);
 	va_start(valist, numPatternsToAdd);
 	for (int patternID = 0; patternID < numPatternsToAdd; patternID++) {
-		pattern_action pattern = va_arg(valist, pattern_action);
+		patternAction_t pattern = va_arg(valist, patternAction_t);
 		pa_addNextLedAction(state->ledPatternsQueue, pattern, initialBrightness, targetBrightness);
 	}
 	va_end(valist);
-	state->ledPatternTimeStep = 0;
 }
 
 long long executePatternStep(struct ledDriver_sensorStat *state) {
@@ -123,20 +123,17 @@ long long executePatternStep(struct ledDriver_sensorStat *state) {
 		return pa_neverCallAgain;
 	}
 
-	struct pa_LedStatesResults *patternStep = pa_executeCurrentLedAction(state->ledPatternsQueue, state->ledPatternTimeStep);
+	struct pa_LedStatesResults *patternStep = pa_executeCurrentLedAction(state->ledPatternsQueue);
 
 	long long timeToNextInvodation = patternStep->nextInvocation;
 	if (timeToNextInvodation == pa_wasLastStep) {
 		pa_getToNextLedAction(state->ledPatternsQueue);
-		state->ledPatternTimeStep = 0;
 		timeToNextInvodation = 500 * 1000;
 	} else if (timeToNextInvodation == pa_neverCallAgain) {
 		pa_resetQueue(state->ledPatternsQueue);
-	} else if (timeToNextInvodation == pa_emptyActionQueu) {
+	} else if (timeToNextInvodation == pa_emptyActionQueue) {
 		pa_destroyLedStateResults(patternStep);
 		return -1;
-	} else {
-		state->ledPatternTimeStep = state->ledPatternTimeStep + 1;
 	}
 	setLedsAccordingToPattern(state->ledctrl, patternStep);
 	sendOutLedDataDefaults(state->ledctrl, state->spiDevice);
@@ -151,6 +148,7 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 
 	char *keyboardCmd = checkNewInput(__keyboardInputName, state->lastKBInputUpdate, allInputs);
 	char *webCmd      = checkNewInput("chodba_webInput",   state->lastWebUpdate, allInputs);
+	uint16_t nextBrightness;
 
 	if ((keyboardCmd == NULL) && (webCmd == NULL)) {
 		if (pa_isQueueEmpty(state->ledPatternsQueue)) {
@@ -164,26 +162,32 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 	
 	if (keyboardCmd != NULL) {
 		if (strcmp(keyboardCmd, "+") == 0) {
-			uint16_t nextBrightness = state->currentBrightness > 0xEFFF ?  0xFFFF : state->currentBrightness + 0x0200;
-		else if (strcmp(keyboardCmd, "-") == 0) {
-			uint16_t nextBrightness = state->currentBrightness < 0x1000 ?  0x0000 : state->currentBrightness - 0x0200;
+			nextBrightness = state->currentBrightness > 0xEFFF ?  0xFFFF : state->currentBrightness + 0x0200;
+		} else if (strcmp(keyboardCmd, "-") == 0) {
+			nextBrightness = state->currentBrightness < 0x1000 ?  0x0000 : state->currentBrightness - 0x0200;
+		} else if (strcmp(keyboardCmd, "Z") == 0) {
+			nextBrightness = 0xFFFF;
+		} else if (strcmp(keyboardCmd, "X") == 0) {
+			nextBrightness = 0x0000;
 		} else {
-			uint16_t nextBrightness = state->currentBrightness;
+			nextBrightness = state->currentBrightness;
 		}
-		setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, nextBrightness,  2, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		setupLedPatternsToQueue(state, state->currentBrightness, nextBrightness,  2, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
 		state->lastKBInputUpdate = getCurrentUSecs();
 	}
 
 	if (webCmd != NULL) {
 		printf("Web command is: %s\n", webCmd);
-		if (strcmp(webCmd, "full on") == 0) {
-			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0xFFFF,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
-		} else if (strcmp(webCmd, "full off") == 0) {
-			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0x0000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
-		} else if (strcmp(webCmd, "half way") == 0) {
-			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0x8000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
-		} else if (strcmp(webCmd, "5 minute delay") == 0) {
-			setupLedPatternsToQueue(state->ledPatternsQueue, state->currentBrightness, 0x0000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		if (strcmp(webCmd, "Full On") == 0) {
+			setupLedPatternsToQueue(state, state->currentBrightness, 0xFFFF,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		} else if (strcmp(webCmd, "Full Off") == 0) {
+			setupLedPatternsToQueue(state, state->currentBrightness, 0x0000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		} else if (strcmp(webCmd, "Half Way") == 0) {
+			setupLedPatternsToQueue(state, state->currentBrightness, 0x8000,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		} else if (strcmp(webCmd, "5 Minute Delay") == 0) {
+			setupLedPatternsToQueue(state, state->currentBrightness, 0x0000,  4, &ledPattern_acknowledgeCommand, &ledPattern_fiveMinuteDelay, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		} else if (strcmp(webCmd, "Night Mode") == 0) {
+			setupLedPatternsToQueue(state, state->currentBrightness, 0x0000,  4, &ledPattern_acknowledgeCommand, &ledPattern_nightMode);
 		}
 		state->lastWebUpdate = getCurrentUSecs();
 	}
