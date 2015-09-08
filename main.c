@@ -20,12 +20,12 @@
 #include "mcp9808_action.h"
 #include "kbInput_action.h"
 #include "led_driver_action.h"
+#include "sensorConfigParser.h"
 
 // EXPERIMENTAL --------- 
 // #include "led_experiments.h"
 // #include "ina219_power_monitor.h"
 //#include "ssd1306_oled_display.h"
-#include "mcp9808_temperature.h"
 #include "mtk3339-gps.h"
 
 // GHashTable *sensorStatus;
@@ -125,9 +125,8 @@ void initialize() {
 
 
 int main(int argc, char **argv) {
-    // ssd1306_demo();
-//    mtk3339_demo();
-
+    readConfigurationFile("homepi.sensors.json");
+    exit(-1);
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
