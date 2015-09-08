@@ -4,9 +4,9 @@
 #include <sys/types.h>
 #include <stdint.h>
 
-const long long pa_neverCallAgain = -1;
-const long long pa_wasLastStep = -2;
-const long long pa_emptyActionQueue = -3;
+const extern long long pa_neverCallAgain;
+const extern long long pa_wasLastStep;
+const extern long long pa_emptyActionQueue;
 
 #define pa_queueLength 5
 
@@ -17,26 +17,27 @@ struct pa_LedStatesResults {
 };
 
 
-typedef struct pa_LedStatesResults *(*pattern_action)(int time_step, int totalLeds, uint16_t initial_intensity, uint16_t target_intensity);
+typedef struct pa_LedStatesResults *(*patternAction_t)(int time_step, int totalLeds, uint16_t initial_intensity, uint16_t target_intensity);
 
 struct pa_Queue {
 	int totalLeds;
 	int current_position;
 	int next_empty_position;
-	pattern_action ledActions[pa_queueLength];
+	int time_step;
+	patternAction_t ledActions[pa_queueLength];
 	uint16_t initial_intensities[pa_queueLength];
 	uint16_t target_intensities[pa_queueLength];
 };
 
 struct pa_Queue *pa_initialize(int totalLeds);
 
-int pa_addNextLedAction(struct pa_Queue *queue, pattern_action *action, uint16_t initial_intensity, uint16_t target_intensity);
+int pa_addNextLedAction(struct pa_Queue *queue, patternAction_t action, uint16_t initial_intensity, uint16_t target_intensity);
 void pa_getToNextLedAction(struct pa_Queue *queue);
 
 void pa_resetQueue(struct pa_Queue *queue);
 int pa_isQueueEmpty(struct pa_Queue *queue);
 
-struct pa_LedStatesResults *pa_executeCurrentLedAction(struct pa_Queue *queue, int time_step);
+struct pa_LedStatesResults *pa_executeCurrentLedAction(struct pa_Queue *queue);
 
 void pa_destroyLedStateResults(struct pa_LedStatesResults *ledStatesResult);
 
