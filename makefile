@@ -20,7 +20,7 @@ make_base: $(OBJS)
 		$(CC) $(CFLAGS) -c -o $@ $<
 
 gather_objs:
-	find . -iname "*.o" -exec mv {} $(OUTPUTDIR) \;
+	find . -iname "*.o" -exec mv -v {} $(OUTPUTDIR) \;
 
 sensor_runner: gather_objs
 		$(CC) $(CFLAGS) $(LIBS) -o sensor_runner output/*.o
