@@ -126,12 +126,12 @@ void initialize() {
 
 int main(int argc, char **argv) {
     // ssd1306_demo();
-    mtk3339_demo();
+//    mtk3339_demo();
 
-    // //Syslog start
-    // openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
+    //Syslog start
+    openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
-    // initialize();    
-    // el_runEventLoop(eventLoop);
+    initialize();    
+    el_runEventLoop(eventLoop);
     return 0;
 }

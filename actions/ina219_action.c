@@ -32,7 +32,40 @@ struct ina219_sensorStat {
 	enum ina219_measurementState measurementState;
 } ina219_sensorStat;
 
-long ina219_initActionFunction(GHashTable *sensorStatus) {
+struct allSensorsDescription_t ina219_allSensors = {
+	.numSensors = 5,
+	.sensorDescriptions = {{
+			.sensorID = ina219LastVoltageMeasurementName, 
+			.sensorDisplayName = "Voltage", 
+			.sensorUnits = "V", 
+			.sensorValueName = "Voltage"
+		}, {
+			.sensorID = ina219LastCurrentMeasurementName, 
+			.sensorDisplayName = "Current",
+			.sensorUnits = "A", 
+			.sensorValueName = "Current"
+		}, {
+			.sensorID = ina219LastPowerMeasurementName, 
+			.sensorDisplayName = "Power Currently Consumed",
+			.sensorUnits = "W", 
+			.sensorValueName = "Watts"
+		}, {
+			.sensorID = ina219TotalPowerStoredMeasurementName, 
+			.sensorDisplayName = "Power Stored",
+			.sensorUnits = "Wh", 
+			.sensorValueName = "Watt Hours"
+		}, {
+			.sensorID = ina219TotalPowerConsumedMeasurementName, 
+			.sensorDisplayName = "Power Consumed",
+			.sensorUnits = "Wh", 
+			.sensorValueName = "Watt Hours"
+		}
+	}
+};
+
+struct actionReturnValue_t ina219_returnStructure;
+
+struct actionReturnValue_t* ina219_initActionFunction() {
 	struct ina219_sensorStat *sensor = (struct ina219_sensorStat *) malloc(sizeof(struct ina219_sensorStat));
 	sensor->device = ina219_initPowerMonitor(1, 0x44);
 	ina219_powerOn(sensor->device);
@@ -44,8 +77,21 @@ long ina219_initActionFunction(GHashTable *sensorStatus) {
 	sensor->totalPowerConsumed = 0;
 	sensor->totalPowerStored = 0;
 
-	g_hash_table_replace(sensorStatus, (gpointer) ina219PowerMonitorSensorStateName, sensor);
-	return 20000;
+	if (sensor->device == NULL) {
+		ina219_returnStructure.sensorState = sensor;
+		ina219_returnStructure.actionErrorStatus = -1;
+		ina219_returnStructure.usecsToNextInvocation = -1;
+		ina219_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
+		ina219_returnStructure.changedInputs = generateNoInputsChanged();
+	} else {
+		ina219_returnStructure.sensorState = sensor;
+		ina219_returnStructure.actionErrorStatus = 0;
+		ina219_returnStructure.usecsToNextInvocation = ina219_powerMonitorRefresh;
+		ina219_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
+		ina219_returnStructure.changedInputs = generateNoInputsChanged();
+	}
+
+	return &ina219_returnStructure;
 }
 
 long ina219_actionFunction(GHashTable* measurementOutput, GHashTable *sensorStatus) {
@@ -90,6 +136,33 @@ long ina219_actionFunction(GHashTable* measurementOutput, GHashTable *sensorStat
 	}
 }
 
+const char *ina219_getActionName() {
+	return ina219PowerMonitorSensorName;
+}
+
+struct inputNotifications_t *h21df_actionStateWatchedInputs() {
+	return &noInputsToWatch;
+}
+
+struct allSensorsDescription_t *h21df_actionStateAllSensors() {
+	return &ina219_allSensors;
+}
+
+
+
 void ina219_closeActionFunction(GHashTable *sensorStatus) {
 	
 }
+
+
+
+struct actionDescriptorStructure_t ina219ActionStructure = {
+	.initiateActionFunction = &ina219_initActionFunction,
+	.stateWatchedInputs     = &ina219_actionStateWatchedInputs,
+	.stateAllSensors        = &ina219_actionStateAllSensors,
+	.actionFunction         = &ina219_actionFunction,
+	.getActionNameFunction  = &ina219_getActionName,
+	.destroyActionFunction  = &ina219_closeActionFunction
+};
+
+

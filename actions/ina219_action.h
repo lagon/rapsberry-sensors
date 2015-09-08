@@ -12,9 +12,7 @@ extern const char *ina219LastPowerMeasurementName;
 extern const char *ina219TotalPowerStoredMeasurementName;
 extern const char *ina219TotelPowerConsumedMeasurementName;
 
-long ina219_initActionFunction(GHashTable *sensorStatus);
-long ina219_actionFunction(GHashTable* measurementOutput, GHashTable *sensorStatus);
-void ina219_closeActionFunction(GHashTable *sensorStatus);
+struct actionDescriptorStructure_t ina219ActionStructure;
 
 #endif
 
