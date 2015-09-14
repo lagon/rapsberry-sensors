@@ -1,28 +1,29 @@
-char *externalEventNotificationPipePath = "/tmp/ra_sen_notification_pipe";
-int el_wantStop = 0;
 
+#include "sensorConfigParser.h"
 #include "actionQueue.h"
 #include "main_event_loop.h"
 
 #define DEBUGPRINT(format, param) printf(format, param);
+
+char *externalEventNotificationPipePath = "/tmp/ra_sen_notification_pipe";
+int el_wantStop = 0;
+
 void freeChangedInputsStructure(struct inputsChanged_t *changedInputs);
 
-void registerAndInitializeSingleSensor(gpointer sensorPtr, gpointer eventLoopPtr) {
-	struct actionDescriptorStructure_t *sensor = (struct actionDescriptorStructure_t *) sensorPtr;
-	struct mainEventLoopControl_t *eventLoop = (struct mainEventLoopControl_t *) eventLoopPtr;
+void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop, struct actionDescriptorStructure_t *sensor, struct sensorConfig_t *cfg) {
+	struct actionReturnValue_t* initReturn = sensor->initiateActionFunction(cfg->sensorNameAppendix, cfg->sensorAddress);
+	if (initReturn->actionErrorStatus != 0) {
+		char *str = allocateAndConcatStrings(sensor->sensorType, cfg->sensorNameAppendix);
+		logErrorMessage("Unable to initiate sensor %s. Check previous messages for errors.", str);
+		free(str);
+		return;
+	}
 	
 	const char* sensorNameOriginal = sensor->getActionNameFunction();
 	char *sensorName = (char *)malloc(sizeof(char) * (strlen(sensorNameOriginal) + 10));
 	sensorName = strcpy(sensorName, sensorNameOriginal);
 	
 	printf("Sensor %s initating.\n", sensorName);
-
-	struct actionReturnValue_t* initReturn = sensor->initiateActionFunction();
-	if (initReturn->actionErrorStatus != 0) {
-		logErrorMessage("Unable to initiate sensor %s. Check previous messages for errors.", sensorName);
-		free(sensorName);
-		return;
-	}
 
 	g_hash_table_replace(eventLoop->allActionsRegistry, sensorName, sensor);
 
@@ -58,22 +59,42 @@ void freeOutdatedInputValue(gpointer ptr) {
 	free(ptr);
 }
 
+struct mainEventLoopControl_t *eventLoopY = (struct mainEventLoopControl_t*) malloc(sizeof(struct mainEventLoopControl_t));
 
-struct mainEventLoopControl_t* el_initializeEventLoop(GList *uninitializedSensors) {
-	struct mainEventLoopControl_t* eventLoop = (struct mainEventLoopControl_t*) malloc(sizeof(struct mainEventLoopControl_t));
+struct mainEventLoopControl_t* el_initializeEventLoop(GHashTable *allActions, GList *configuredActions);
+	struct mainEventLoopControl_t *eventLoopX;
 
-	eventLoop->allActionsRegistry = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoop->allActionsStatuses = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoop->actionQueue = aq_initQueue();
-	eventLoop->registeredInputWatchers = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoop->inputValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, &freeOutdatedSensorValue, &freeOutdatedInputValue);
-	eventLoop->changedInputValues = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoop->allSensorValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeOutdatedSensorValue);
+	eventLoopX = (struct mainEventLoopControl_t*) malloc(sizeof(struct mainEventLoopControl_t));
+
+	eventLoopX->allActionsRegistry = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoopX->allActionsStatuses = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoopX->actionQueue = aq_initQueue();
+	eventLoopX->registeredInputWatchers = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoopX->inputValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, &freeOutdatedSensorValue, &freeOutdatedInputValue);
+	eventLoopX->changedInputValues = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoopX->allSensorValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeOutdatedSensorValue);
+	
 	printf("About to initiate actions.\n");
 	//Register all sensors
-	g_list_foreach(uninitializedSensors, &registerAndInitializeSingleSensor, eventLoop);
 
-	return(eventLoop);
+	GList *configuredItem;
+	for (configuredItem = configuredActions; configuredItem != NULL; configuredItem = configuredItem->next) {
+		struct sensorConfig_t *cfg = (struct sensorConfig_t *) configuredItem->data;
+		struct actionDescriptorStructure_t *sensor = (struct actionDescriptorStructure_t *) g_hash_table_lookup(allActions, cfg->sensorType);
+		if (sensor == NULL) {
+			printf("There is no sensor of type %s\n", cfg->sensorType);
+			continue;
+		}
+
+		registerAndInitializeSingleSensor(eventLoopX, sensor, cfg);
+	    // do something with l->data
+	}
+
+
+//	g_list_foreach(uninitializedSensors, &registerAndInitializeSingleSensor, eventLoop);
+
+	return(eventLoopX);
+
 };
 
 struct inputsChanged_t *transformExternalInputs(GList *externalInputList) {

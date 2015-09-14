@@ -1,0 +1,9 @@
+"Configuration" : [
+{"SensorType" : "H21DF",          "Name" : "On Cupboard", "SensorAddress" : "0x40"},
+{"SensorType" : "BMP183",         "Name" : "On Cupboard", "SensorAddress" : "0"},
+{"SensorType" : "MCP9808",        "Name" : "On Cupboard", "SensorAddress" : "0x18"},
+{"SensorType" : "MCP9808",        "Name" : "Under table", "SensorAddress" : "0x19"},
+{"SensorType" : "MCP9808",        "Name" : "Window",      "SensorAddress" : "0x20"},
+{"SensorType" : "LedDriver",      "Name" : "",            "SensorAddress" : "1"},
+{"SensorType" : "SQLLiteStorage", "Name" : "",            "SensorAddress" : "-1"}
+]

@@ -43,7 +43,7 @@ struct actionReturnValue_t {
 } actionReturnValue_t;
 
  //Initiates the action. Returns action return type. On success the actionReturnValue_t::actionErrorStatus == 0 and sensorState set to approariate state - it will be stored and passed to action function, otherwise != 0.
-typedef struct actionReturnValue_t* (*initiateActionFunction_t)();
+typedef struct actionReturnValue_t* (*initiateActionFunction_t)(char *nameAppendix, char *address);
 
 //Returns an array of watched inputs
 typedef struct inputNotifications_t* (*stateWatchedInputs_t)();
@@ -66,6 +66,8 @@ typedef void (*destroyActionFunction_t)(gpointer);
 
 
 struct actionDescriptorStructure_t {
+	char *sensorType;
+	gpointer sensorStatePtr;
 	initiateActionFunction_t initiateActionFunction;
 	stateWatchedInputs_t stateWatchedInputs;
 	stateAllSensors_t stateAllSensors;

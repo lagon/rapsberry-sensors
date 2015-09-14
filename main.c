@@ -28,101 +28,33 @@
 //#include "ssd1306_oled_display.h"
 #include "mtk3339-gps.h"
 
-// GHashTable *sensorStatus;
-// GHashTable *actionOutputs;
-// struct actionQueue* aq;
-
-struct mainEventLoopControl_t* eventLoop;
+struct mainEventLoopControl_t* mainEventLoop;
 
 void free_action_output(void *actionOutput) {
     free(actionOutput);
 }
 
-GList *getAllActions() {
-    GList *allActions = NULL;
+GHashTable *getAllAvailableActions() {
+    GHashTable *allAvailableActions = g_hash_table_new(&g_str_hash, &g_str_equal);
+    g_hash_table_replace(allAvailableActions, bmp183ActionStructure.sensorType,    &bmp183ActionStructure);
+    g_hash_table_replace(allAvailableActions, h21dfActionStructure.sensorType,     &h21dfActionStructure);
+    g_hash_table_replace(allAvailableActions, printActionStructure.sensorType,     &printActionStructure);
+    g_hash_table_replace(allAvailableActions, mcp9808ActionStructure.sensorType,   &mcp9808ActionStructure);
+    g_hash_table_replace(allAvailableActions, kbInputActionStructure.sensorType,   &kbInputActionStructure);
+    g_hash_table_replace(allAvailableActions, ledDriverActionStructure.sensorType, &ledDriverActionStructure);
+    g_hash_table_replace(allAvailableActions, save2SqlActionStructure.sensorType,  &save2SqlActionStructure);
 
-    allActions = g_list_append(allActions, &bmp183ActionStructure);
-    allActions = g_list_append(allActions, &h21dfActionStructure);
-    allActions = g_list_append(allActions, &printActionStructure);
-    allActions = g_list_append(allActions, &mcp9808ActionStructure);
-    allActions = g_list_append(allActions, &kbInputActionStructure);
-    allActions = g_list_append(allActions, &ledDriverActionStructure);
-    allActions = g_list_append(allActions, &save2SqlActionStructure);
-
-    return allActions;
+    return allAvailableActions;
 }
 
-void initialize() {
+void initialize(const char *configurationFile) {
     prepareSQLDatabase();
 
-    // sensorStatus = g_hash_table_new(&g_str_hash, &g_str_equal);
-    // actionOutputs = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &free_action_output);
-    GList *allActions = getAllActions();
-    eventLoop = el_initializeEventLoop(allActions);
-
-    //enureAllSensorDescriptionInDB(allActions);
-
-    // aq = aq_initQueue();
-
-    // if (h21df_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 1000, &h21df_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "H21DF Humidity sensor initiation failed. Sensor will not run.");
-    // }
-
-    // if (bmp183_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 5000, &bmp183_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "BMP183 Pressure sensor initiation failed. Sensor will not run.");
-    // }
-
-    // if (ina219_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 6000, &ina219_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "INA219 Power Consumption sensor initiation failed. Sensor will not run.");
-    // }
-
-    // if (mcp9808_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 6500, &mcp9808_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "MCP9808 Temperature sensor initiation failed. Sensor will not run.");
-    // }
-
-    // if (print_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 500000, &print_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "Print on terminal initiation failed. Sensor will not run.");
-    // }
-
-    // if (save_actual_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 550000, &save_actual_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "Store current value initiation failed. Sensor will not run.");
-    // }
-
-    // if (sqliteStore_initActionFunction(sensorStatus) > 0) {
-    //     aq_addAction(aq, 600000, &sqliteStore_actionFunction);
-    // } else {
-    //     syslog(LOG_ERR, "Archive measurements to SQLite initiation failed. Sensor will not run.");
-    // }
+    GHashTable *allActions = getAllAvailableActions();
+    GList *configuredSensors = readConfigurationFile(configurationFile);
+    mainEventLoop = el_initializeEventLoop(allActions, configuredSensors);
+    g_list_free_full(configuredSensors, &freeSingleSensorConfiguration);
 }
-
-// void mainEventLoop() {
-//     while(1) {
-//         long usecsToSleep = aq_usecsToNextAction(aq);
-//         if (usecsToSleep > 0) {
-//             usleep(usecsToSleep);
-//         }
-
-//         actionFunction *af = aq_getAction(aq);
-//         long long startTime = getCurrentUSecs();
-//         long long nextAction = (*af)(actionOutputs, sensorStatus);
-//         long long stopTime = getCurrentUSecs();
-//         printf("Action %p needed %lld useconds to finish\n", af, stopTime - startTime);
-//         aq_addAction(aq, nextAction, af);
-//     }
-// }
-
 
 int main(int argc, char **argv) {
     readConfigurationFile("homepi.sensors.json");
@@ -131,6 +63,6 @@ int main(int argc, char **argv) {
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
     initialize();    
-    el_runEventLoop(eventLoop);
+    el_runEventLoop(mainEventLoop);
     return 0;
 }

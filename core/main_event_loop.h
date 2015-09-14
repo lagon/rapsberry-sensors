@@ -17,6 +17,7 @@
 #include "actionDescriptorStructure.h"
 #include "sensorDescriptionStructure.h"
 #include "sqliteDbUtilityFunctions.h"
+#include "actionQueue.h"
 
 struct mainEventLoopControl_t {
 	GHashTable *allActionsRegistry; // Hastable with action name string as a key and pointer to struct actionDescriptorStructure_t. Contains all the actions registered even those no longer scheduled.
@@ -30,9 +31,10 @@ struct mainEventLoopControl_t {
 	GHashTable *changedInputValues; //Updated values of individual inputs. Key is name of the input and value is inputValue_t. At the end of action notification cycle, values will be moved from this hash table to "main" inputValues table.
 
 	sqlite3 *externalInputs;
-};
+} mainEventLoopControl_t;
 
-struct mainEventLoopControl_t* el_initializeEventLoop(GList *initializedSensors);
+
+struct mainEventLoopControl_t* el_initializeEventLoop(GHashTable *allActions, GList *configuredActions);
 void el_runEventLoop(struct mainEventLoopControl_t *eventLoop);
 
 #endif

@@ -10,4 +10,9 @@
 long long getCurrentUSecs();
 void logErrorMessage(const char *format, const char *detail);
 
+char *allocateAndConcatStrings(const char* str1, const char *str2);
+
+struct allSensorsDescription_t *constructAllSensorDescription(const struct allSensorsDescription_t *original, char *nameAppendix);
+
+
 #endif

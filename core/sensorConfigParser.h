@@ -10,5 +10,6 @@ struct sensorConfig_t {
 } sensorConfig_t;
 
 GList *readConfigurationFile(const char* filename);
+void freeSingleSensorConfiguration(gpointer ptr);
 
 #endif
