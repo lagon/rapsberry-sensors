@@ -19,7 +19,7 @@ void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop,
 		return;
 	}
 	
-	const char* sensorNameOriginal = sensor->getActionNameFunction();
+	const char* sensorNameOriginal = sensor->getActionNameFunction(sensor->sensorStatePtr);
 	char *sensorName = (char *)malloc(sizeof(char) * (strlen(sensorNameOriginal) + 10));
 	sensorName = strcpy(sensorName, sensorNameOriginal);
 	
@@ -59,20 +59,16 @@ void freeOutdatedInputValue(gpointer ptr) {
 	free(ptr);
 }
 
-struct mainEventLoopControl_t *eventLoopY = (struct mainEventLoopControl_t*) malloc(sizeof(struct mainEventLoopControl_t));
+struct mainEventLoopControl_t* el_initializeEventLoop(GHashTable *allActions, GList *configuredActions) {
+	struct mainEventLoopControl_t *eventLoop = (struct mainEventLoopControl_t*) malloc(sizeof(struct mainEventLoopControl_t));
 
-struct mainEventLoopControl_t* el_initializeEventLoop(GHashTable *allActions, GList *configuredActions);
-	struct mainEventLoopControl_t *eventLoopX;
-
-	eventLoopX = (struct mainEventLoopControl_t*) malloc(sizeof(struct mainEventLoopControl_t));
-
-	eventLoopX->allActionsRegistry = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoopX->allActionsStatuses = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoopX->actionQueue = aq_initQueue();
-	eventLoopX->registeredInputWatchers = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoopX->inputValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, &freeOutdatedSensorValue, &freeOutdatedInputValue);
-	eventLoopX->changedInputValues = g_hash_table_new(&g_str_hash, &g_str_equal);
-	eventLoopX->allSensorValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeOutdatedSensorValue);
+	eventLoop->allActionsRegistry = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoop->allActionsStatuses = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoop->actionQueue = aq_initQueue();
+	eventLoop->registeredInputWatchers = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoop->inputValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, &freeOutdatedSensorValue, &freeOutdatedInputValue);
+	eventLoop->changedInputValues = g_hash_table_new(&g_str_hash, &g_str_equal);
+	eventLoop->allSensorValues = g_hash_table_new_full(&g_str_hash, &g_str_equal, NULL, &freeOutdatedSensorValue);
 	
 	printf("About to initiate actions.\n");
 	//Register all sensors
@@ -85,15 +81,10 @@ struct mainEventLoopControl_t* el_initializeEventLoop(GHashTable *allActions, GL
 			printf("There is no sensor of type %s\n", cfg->sensorType);
 			continue;
 		}
-
-		registerAndInitializeSingleSensor(eventLoopX, sensor, cfg);
-	    // do something with l->data
+		registerAndInitializeSingleSensor(eventLoop, sensor, cfg);
 	}
 
-
-//	g_list_foreach(uninitializedSensors, &registerAndInitializeSingleSensor, eventLoop);
-
-	return(eventLoopX);
+	return(eventLoop);
 
 };
 
@@ -186,7 +177,7 @@ void el_readExternalInputs(struct mainEventLoopControl_t *eventLoop) {
 }
 
 void el_executeAction(struct actionDescriptorStructure_t *action2Execute, struct mainEventLoopControl_t *eventLoop) {
-	const char *sensorName = action2Execute->getActionNameFunction();
+	const char *sensorName = action2Execute->getActionNameFunction(action2Execute->sensorStatePtr);
 	printf("About to execute action %s\n", sensorName);
 	gpointer *sensorState = g_hash_table_lookup(eventLoop->allActionsStatuses, sensorName);
 	if (sensorState == NULL) {
@@ -278,7 +269,7 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 	FD_SET(externalEventNotifierPipe, &externalEventNotifiersToWatch);
 
 	struct timeval waitingTime;
-	int loopCnt = 100;
+//	int loopCnt = 100;
 
 	while (el_wantStop == 0) {
 		int bytesRead = read(externalEventNotifierPipe, &ch, 1);

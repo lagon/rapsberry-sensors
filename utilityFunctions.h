@@ -7,6 +7,8 @@
 #include <string.h>
 #include <syslog.h>
 
+#include "sensorDescriptionStructure.h"
+
 long long getCurrentUSecs();
 void logErrorMessage(const char *format, const char *detail);
 

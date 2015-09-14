@@ -3,7 +3,7 @@ include basic_defs.makefile
 #OBJS=actionQueue.o main.o h21df_action.o h21df_library.o i2clib.o printSensorsStat_action.o sqlite_store_sensor_stat.o bmp183_library.o spilib.o
 OBJS=utilityFunctions.o main.o
 
-all: clean mk_output_dir make_core make_sensors make_actions make_base sensor_runner
+all: clean mk_output_dir make_core make_actions make_sensors make_base sensor_runner
 
 make_actions:
 	make -f actions/makefile compile

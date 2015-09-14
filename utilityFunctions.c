@@ -34,8 +34,7 @@ char *allocateAndConcatStrings(const char* str1, const char *str2) {
 }
 
 struct allSensorsDescription_t *constructAllSensorDescription(const struct allSensorsDescription_t *original, char *nameAppendix) {
-	struct allSensorsDescription_t *newDescription = (struct allSensorsDescription_t *) malloc(sizeof(struct allSensorsDescription_t));
-	newDescription->sensorDescriptions = (struct singleSensorDescription_t*) malloc(sizeof(struct singleSensorDescription_t) * original->numSensors);
+	struct allSensorsDescription_t *newDescription = (struct allSensorsDescription_t *) malloc(sizeof(struct allSensorsDescription_t) + sizeof(struct singleSensorDescription_t) * original->numSensors);
 	newDescription->numSensors = original->numSensors;
 	for (int i = 0; i < newDescription->numSensors; i++) {
 		newDescription->sensorDescriptions[i].sensorID          = allocateAndConcatStrings(original->sensorDescriptions[i].sensorID,          nameAppendix);

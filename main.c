@@ -57,12 +57,14 @@ void initialize(const char *configurationFile) {
 }
 
 int main(int argc, char **argv) {
-    readConfigurationFile("homepi.sensors.json");
-    exit(-1);
+    if (argc != 2) {
+        printf("Usage is %s <configuration file>.json\n", argv[0]);
+        return -1;
+    }
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
-    initialize();    
+    initialize(argv[1]);
     el_runEventLoop(mainEventLoop);
     return 0;
 }

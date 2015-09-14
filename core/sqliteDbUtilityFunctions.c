@@ -127,8 +127,8 @@ void ensureSensorInDB(gpointer data, gpointer db) {
 void extractSensorsFromSingleAction(gpointer rawActionPtr, gpointer allSensorsPtr) {
 	struct actionDescriptorStructure_t *action = (struct actionDescriptorStructure_t *)rawActionPtr;
 	GList *allSensors = (GList *)allSensorsPtr;
-	printf("Examining action %s for inputs. \n", action->getActionNameFunction());
-	struct allSensorsDescription_t *sensors = action->stateAllSensors();
+	printf("Examining action %s for inputs. \n", action->getActionNameFunction(action->sensorStatePtr));
+	struct allSensorsDescription_t *sensors = action->stateAllSensors(action->sensorStatePtr);
 
 	for (int sensID = 0; sensID < sensors->numSensors; sensID++) {
 	 	printf("\tSensor name %s\n", sensors->sensorDescriptions[sensID].sensorDisplayName);

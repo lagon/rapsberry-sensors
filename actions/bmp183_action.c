@@ -61,7 +61,7 @@ struct actionReturnValue_t* bmp183_initActionFunction(char *nameAppendix, char *
 	status->state           = BMP183_NOP;
 	status->sensorName      = allocateAndConcatStrings(bmp183PressureSensorName, nameAppendix);
 	status->sensorStateName = allocateAndConcatStrings(bmp183PressureSensorStateName, nameAppendix);
-	status->allSensors      = constructAllSensorDescription(bmp183_allSensors, nameAppendix);
+	status->allSensors      = constructAllSensorDescription(&bmp183_allSensors, nameAppendix);
 	
 	bmp183_returnStructure.sensorState = status;
 	bmp183_returnStructure.actionErrorStatus = 0;
@@ -120,16 +120,9 @@ struct actionReturnValue_t* bmp183_actionFunction(gpointer rawSensorStatus, GHas
 	return &bmp183_returnStructure;
 }
 
-void bmp183_closeActionFunction(gpointer sensorStatus) {
-	struct bmp183_sensorStat *status = (struct bmp183_sensorStat *)sensorStatus;
-	bmp183_close(status->device);
-	free(status->sensorName);
-	free(status->sensorStateName);
-}
-
 const char *bmp183_getActionName(gpointer sensorStatus) {
 	struct bmp183_sensorStat *status = (struct bmp183_sensorStat *)sensorStatus;
-	return sensorStatus->sensorStateName;
+	return status->sensorStateName;
 }
 
 struct inputNotifications_t *bmp183_actionStateWatchedInputs(gpointer sensorStatus) {
@@ -138,7 +131,16 @@ struct inputNotifications_t *bmp183_actionStateWatchedInputs(gpointer sensorStat
 
 struct allSensorsDescription_t *bmp183_actionStateAllSensors(gpointer sensorStatus) {
 	struct bmp183_sensorStat *status = (struct bmp183_sensorStat *)sensorStatus;
-	return sensorStatus->allSensors;
+	return status->allSensors;
+}
+
+void bmp183_closeActionFunction(gpointer sensorStatus) {
+	struct bmp183_sensorStat *status = (struct bmp183_sensorStat *)sensorStatus;
+	bmp183_close(status->device);
+	free(status->sensorName);
+	free(status->sensorStateName);
+	free(status->allSensors);
+	free(sensorStatus);
 }
 
 
