@@ -18,7 +18,7 @@ void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop,
 		free(str);
 		return;
 	}
-	
+	sensor->sensorStatePtr = initReturn->sensorState;
 	const char* sensorNameOriginal = sensor->getActionNameFunction(sensor->sensorStatePtr);
 	char *sensorName = (char *)malloc(sizeof(char) * (strlen(sensorNameOriginal) + 10));
 	sensorName = strcpy(sensorName, sensorNameOriginal);

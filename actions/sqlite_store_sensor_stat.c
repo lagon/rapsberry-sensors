@@ -24,16 +24,16 @@ struct allSensorsDescription_t sqliteSave_noSensors = {
 };
 
 struct sqlStatusActionStatus {
+	char *sensorStateName;
 	sqlite3 *db;
 	sqlite3_stmt *preparedStmt;
 } sqlStatusActionStatus;
 
 static const char *sqlInsertSensorDataStatement = "INSERT INTO sensorStats (sensorID, sensorDisplayName, measurementTime, sensorValue) values (?, ?, ?, ?);";
 
-struct actionReturnValue_t *sqliteStore_initActionFunction() {
+struct actionReturnValue_t *sqliteStore_initActionFunction(char *nameAppendix, char *address) {
 	struct sqlStatusActionStatus *sql = (struct sqlStatusActionStatus*) malloc(sizeof(sqlStatusActionStatus));
 //	prepare_db_file(sqlite_filename);
-
 	sqliteSave_returnStructure.sensorState = sql;
 	sqliteSave_returnStructure.actionErrorStatus = 0;
 	sqliteSave_returnStructure.usecsToNextInvocation = sqliteSensorInterval;
@@ -41,6 +41,7 @@ struct actionReturnValue_t *sqliteStore_initActionFunction() {
 	sqliteSave_returnStructure.changedInputs = generateNoInputsChanged();
 
 	sql->db = openDbConnection();
+	sql->sensorStateName = allocateAndConcatStrings(sqliteSensorStatusName,nameAppendix);
 
 	if (sqlite3_prepare_v2(sql->db, sqlInsertSensorDataStatement, strlen(sqlInsertSensorDataStatement), &sql->preparedStmt, NULL) != SQLITE_OK) {
 		logErrorMessage("Error occured compiling prepared statement %s:", sqlite3_errmsg(sql->db));
@@ -56,7 +57,7 @@ struct inputNotifications_t *sqliteStore_actionStateWatchedInputs() {
 	return &noInputsToWatch;
 }
 
-struct allSensorsDescription_t* sqliteStore_actionStateAllSensors() {
+struct allSensorsDescription_t* sqliteStore_actionStateAllSensors(gpointer ptr) {
 	return &sqliteSave_noSensors;
 }
 
@@ -91,8 +92,9 @@ struct actionReturnValue_t *sqliteStore_actionFunction(gpointer rawSensorStatus,
 	return &sqliteSave_returnStructure;
 }
 
-const char *sqliteStore_getActionName() {
-	return sqliteSensorStatusName;
+const char *sqliteStore_getActionName(gpointer rawSensorStatePtr) {
+	struct sqlStatusActionStatus *sensorState = (struct sqlStatusActionStatus *)rawSensorStatePtr;
+	return sensorState->sensorStateName;
 }
 
 void sqliteStore_closeActionFunction(gpointer rawSensorStatus) {
@@ -102,6 +104,8 @@ void sqliteStore_closeActionFunction(gpointer rawSensorStatus) {
 }
 
 struct actionDescriptorStructure_t save2SqlActionStructure = {
+	.sensorType = "SQLLiteStorage",
+	.sensorStatePtr = NULL,
 	.initiateActionFunction = &sqliteStore_initActionFunction,
 	.stateWatchedInputs = &sqliteStore_actionStateWatchedInputs,
 	.stateAllSensors = &sqliteStore_actionStateAllSensors,

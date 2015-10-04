@@ -51,7 +51,7 @@ struct actionReturnValue_t* h21df_initActionFunction(char *nameAppendix, char *a
 	struct h21dfSensorState_t *state = (struct h21dfSensorState_t *) malloc(sizeof(struct h21dfSensorState_t));
 	state->device = dev;
 	state->temperatureSensorName = allocateAndConcatStrings(__h21dfTemperatureSensorName, nameAppendix);
-	state->temperatureSensorName = allocateAndConcatStrings(__h21dfHumiditySensorName, nameAppendix);
+	state->humiditySensorName    = allocateAndConcatStrings(__h21dfHumiditySensorName, nameAppendix);
 	state->sensorStateName       = allocateAndConcatStrings(h21dfSensorStateName, nameAppendix);
 	state->allSensors            = constructAllSensorDescription(&h21df_allSensors, nameAppendix);
 
@@ -64,6 +64,7 @@ struct actionReturnValue_t* h21df_initActionFunction(char *nameAppendix, char *a
 }
 
 struct actionReturnValue_t* h21df_actionFunction(gpointer rawSensorStatus, GHashTable* measurementOutput, GHashTable *allInputs) {
+
 	struct h21dfSensorState_t *state = (struct h21dfSensorState_t *)rawSensorStatus;
 
 	double temperature = h21DF_readTemperature(state->device);

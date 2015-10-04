@@ -25,7 +25,7 @@ uint16_t convertDoubleToIntTemp(double temperature) {
 }
 
 void mcp9808_initialize(struct mcp9808State *mcp9808) {
-	mcp9808->configuration = 0x0300;
+	mcp9808->configuration = 0x0100;
 	uint16_t configuration = mcp9808->configuration; //0000 0011 0000 0000 = 1.5C hysteresis & shutdown
 	uint16_t t_crit  = convertDoubleToIntTemp(mcp9808_critical_temperature);
 	uint16_t t_upper = convertDoubleToIntTemp(mcp9808_upper_alert_boundary);

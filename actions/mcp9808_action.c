@@ -2,7 +2,7 @@
 #include "mcp9808_action.h"
 #include "actionDescriptorStructure.h"
 
-const char* mcp9808TemperatureSensorName = "MCP9808 High Accuracy Temperature Sensor";
+//const char* mcp9808TemperatureSensorName = "MCP9808 High Accuracy Temperature Sensor";
 const char* mcp9808TemperatureSensorStateName = "MCP9808";
 
 #define __mcp9808TemperatureName "MCP9808 Temperature"
@@ -20,6 +20,10 @@ struct mcp9808_sensorStat {
 	double totalTemperature;
 	double temperature;
 	enum mcp9808_measurementState state;
+
+	struct allSensorsDescription_t *allSensors;
+	char *sensorStateName;
+	char *sensorName;
 } ina219_sensorStat;
 
 struct allSensorsDescription_t mcp9808_allSensors = {
@@ -34,12 +38,15 @@ struct allSensorsDescription_t mcp9808_allSensors = {
 
 struct actionReturnValue_t mcp9808_returnStructure;
 
-struct actionReturnValue_t *mcp9808_initActionFunction() {
+struct actionReturnValue_t *mcp9808_initActionFunction(char *nameAppendix, char *address) {
 	struct mcp9808_sensorStat *sensor = (struct mcp9808_sensorStat *) malloc(sizeof(struct mcp9808_sensorStat));
 	sensor->device = mcp9808_initTemperatureSensor(1, 0x18);
 	mcp9808_stopMeasuring(sensor->device);
 	sensor->state = MCP9808_IDLE;
-	
+	sensor->allSensors = constructAllSensorDescription(&mcp9808_allSensors, nameAppendix);
+	sensor->sensorStateName = allocateAndConcatStrings(mcp9808TemperatureSensorStateName, nameAppendix);
+	sensor->sensorName = allocateAndConcatStrings(mcp9808TemperatureName, nameAppendix);
+
 	mcp9808_returnStructure.sensorState = sensor;
 	mcp9808_returnStructure.actionErrorStatus = 0;
 	mcp9808_returnStructure.usecsToNextInvocation = mcp9808_temperatureMeasurementTime;
@@ -76,8 +83,8 @@ struct actionReturnValue_t* mcp9808_actionFunction(gpointer mcp9808SensorStat, G
 			mcp9808_stopMeasuring(mcp9808->device);
 			printf("Reported temperature %f\n", mcp9808->temperature);
 
-			struct actionOutputItem *ao_temp = generateOutputItem(mcp9808TemperatureName, mcp9808->temperature);
-			g_hash_table_replace(measurementOutput, (gpointer) mcp9808TemperatureName, ao_temp);
+			struct actionOutputItem *ao_temp = generateOutputItem(mcp9808->sensorName, mcp9808->temperature);
+			g_hash_table_replace(measurementOutput, (gpointer) mcp9808->sensorName, ao_temp);
 
 			mcp9808_returnStructure.sensorState = mcp9808;
 			mcp9808_returnStructure.usecsToNextInvocation = mcp9808_idleTime;
@@ -89,16 +96,18 @@ struct actionReturnValue_t* mcp9808_actionFunction(gpointer mcp9808SensorStat, G
 	return &mcp9808_returnStructure;
 }
 
-const char *mcp9808_getActionName() {
-	return mcp9808TemperatureSensorStateName;
+const char *mcp9808_getActionName(gpointer mcp9808SensorStat) {
+	struct mcp9808_sensorStat *mcp9808 = (struct mcp9808_sensorStat *)mcp9808SensorStat;
+	return mcp9808->sensorStateName;
 }
 
 struct inputNotifications_t *mcp9808_actionStateWatchedInputs() {
 	return &noInputsToWatch;
 }
 
-struct allSensorsDescription_t *mcp9808_actionStateAllSensors() {
-	return &mcp9808_allSensors;
+struct allSensorsDescription_t *mcp9808_actionStateAllSensors(gpointer mcp9808SensorStat) {
+	struct mcp9808_sensorStat *mcp9808 = (struct mcp9808_sensorStat *)mcp9808SensorStat;
+	return mcp9808->allSensors;
 }
 
 
@@ -109,6 +118,8 @@ void mcp9808_closeActionFunction(gpointer mcp9808SensorStatus) {
 
 
 struct actionDescriptorStructure_t mcp9808ActionStructure = {
+	.sensorType             = "MCP9808",
+	.sensorStatePtr         = NULL,
 	.initiateActionFunction = &mcp9808_initActionFunction,
 	.stateWatchedInputs     = &mcp9808_actionStateWatchedInputs,
 	.stateAllSensors        = &mcp9808_actionStateAllSensors,
