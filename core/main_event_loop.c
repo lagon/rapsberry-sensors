@@ -10,6 +10,12 @@ int el_wantStop = 0;
 
 void freeChangedInputsStructure(struct inputsChanged_t *changedInputs);
 
+struct actionDescriptorStructure_t *allocateAndCopyActionDescriptionStructure(struct actionDescriptorStructure_t *sensor) {
+	struct actionDescriptorStructure_t *cpy = (struct actionDescriptorStructure_t *) malloc(sizeof(struct actionDescriptorStructure_t));
+	memcpy(cpy, sensor, sizeof(struct actionDescriptorStructure_t));
+	return cpy;
+}
+
 void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop, struct actionDescriptorStructure_t *sensor, struct sensorConfig_t *cfg) {
 	struct actionReturnValue_t* initReturn = sensor->initiateActionFunction(cfg->sensorNameAppendix, cfg->sensorAddress);
 	if (initReturn->actionErrorStatus != 0) {
@@ -41,7 +47,9 @@ void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop,
 	g_hash_table_replace(eventLoop->allActionsStatuses, sensorName, initReturn->sensorState);
 	freeChangedInputsStructure(initReturn->changedInputs);
 
-	aq_addAction(eventLoop->actionQueue, initReturn->usecsToNextInvocation, sensor);
+	struct actionDescriptorStructure_t *sensorCpy = allocateAndCopyActionDescriptionStructure(sensor);
+
+	aq_addAction(eventLoop->actionQueue, initReturn->usecsToNextInvocation, sensorCpy);
 	printf("Sensor %s initiation completed.\n", sensorName);
 	return;
 }
