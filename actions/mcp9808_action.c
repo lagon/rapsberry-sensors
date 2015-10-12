@@ -10,7 +10,7 @@ const char *mcp9808TemperatureName = __mcp9808TemperatureName;
 
 const long long mcp9808_temperatureMeasurementTime = 300 * 1000; //300ms
 const long long mcp9808_idleTime = 60 * 1000 * 1000; //60 sec
-const uint8_t measurementsInBurst = 5;
+const uint8_t measurementsInBurst = 1;
 
 enum mcp9808_measurementState {MCP9808_IDLE, MCP9808_MEASURING} mcp9808_measurementState;
 
@@ -38,20 +38,35 @@ struct allSensorsDescription_t mcp9808_allSensors = {
 
 struct actionReturnValue_t mcp9808_returnStructure;
 
+
+
 struct actionReturnValue_t *mcp9808_initActionFunction(char *nameAppendix, char *address) {
 	struct mcp9808_sensorStat *sensor = (struct mcp9808_sensorStat *) malloc(sizeof(struct mcp9808_sensorStat));
-	sensor->device = mcp9808_initTemperatureSensor(1, 0x18);
-	mcp9808_stopMeasuring(sensor->device);
-	sensor->state = MCP9808_IDLE;
-	sensor->allSensors = constructAllSensorDescription(&mcp9808_allSensors, nameAppendix);
-	sensor->sensorStateName = allocateAndConcatStrings(mcp9808TemperatureSensorStateName, nameAppendix);
-	sensor->sensorName = allocateAndConcatStrings(mcp9808TemperatureName, nameAppendix);
 
-	mcp9808_returnStructure.sensorState = sensor;
-	mcp9808_returnStructure.actionErrorStatus = 0;
-	mcp9808_returnStructure.usecsToNextInvocation = mcp9808_temperatureMeasurementTime;
-	mcp9808_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
-	mcp9808_returnStructure.changedInputs = generateNoInputsChanged();
+	char *x;
+	uint8_t addr = strtol(address, &x, 16);
+	if (address != x) {
+		sensor->device = mcp9808_initTemperatureSensor(1, addr);
+	} else {
+		printf("MCP9808: Was unable to convert %s into address...\n", address);
+		sensor->device = NULL;
+	}
+
+	if (sensor->device != NULL) {
+//		mcp9808_stopMeasuring(sensor->device);
+		sensor->state = MCP9808_IDLE;
+		sensor->allSensors = constructAllSensorDescription(&mcp9808_allSensors, nameAppendix);
+		sensor->sensorStateName = allocateAndConcatStrings(mcp9808TemperatureSensorStateName, nameAppendix);
+		sensor->sensorName = allocateAndConcatStrings(mcp9808TemperatureName, nameAppendix);
+
+		mcp9808_returnStructure.sensorState = sensor;
+		mcp9808_returnStructure.actionErrorStatus = 0;
+		mcp9808_returnStructure.usecsToNextInvocation = mcp9808_temperatureMeasurementTime;
+		mcp9808_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
+		mcp9808_returnStructure.changedInputs = generateNoInputsChanged();
+	} else {
+		mcp9808_returnStructure.actionErrorStatus = -1;		
+	}
 
 	return &mcp9808_returnStructure;
 }
@@ -64,7 +79,7 @@ struct actionReturnValue_t* mcp9808_actionFunction(gpointer mcp9808SensorStat, G
 	mcp9808_returnStructure.changedInputs = generateNoInputsChanged();
 
 	if (mcp9808->state == MCP9808_IDLE) {
-		mcp9808_startMeasuring(mcp9808->device);
+//		mcp9808_startMeasuring(mcp9808->device);
 		mcp9808->totalTemperature = 0;
 		mcp9808->remainingMeasurementsInBurst = measurementsInBurst;
 		mcp9808->state = MCP9808_MEASURING;
@@ -80,7 +95,7 @@ struct actionReturnValue_t* mcp9808_actionFunction(gpointer mcp9808SensorStat, G
 			mcp9808->state = MCP9808_IDLE;
 
 			mcp9808->temperature = mcp9808->totalTemperature / (double)measurementsInBurst;
-			mcp9808_stopMeasuring(mcp9808->device);
+//			mcp9808_stopMeasuring(mcp9808->device);
 			printf("Reported temperature %f\n", mcp9808->temperature);
 
 			struct actionOutputItem *ao_temp = generateOutputItem(mcp9808->sensorName, mcp9808->temperature);
