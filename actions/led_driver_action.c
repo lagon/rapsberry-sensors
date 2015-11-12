@@ -29,6 +29,9 @@ struct ledDriver_sensorStat {
 	long long lastWebUpdate;
 	uint16_t currentBrightness;
 	struct pa_Queue *ledPatternsQueue;
+	char *sensorStateName;
+
+
 } ledDriver_sensorStat;
 
 void setReturnStructure(struct actionReturnValue_t *returnStructure, struct ledDriver_sensorStat *sensorState);
@@ -41,7 +44,7 @@ void setLedsAccordingToPattern(struct allLedControlStruct *ledctrl, struct pa_Le
 	printf("\n");
 }
 
-struct actionReturnValue_t* ledDriver_initActionFunction() {
+struct actionReturnValue_t* ledDriver_initActionFunction(char *nameAppendix, char *address) {
 	int spidev = spi_initDevice(0, 0);
 	if (spidev < 0) {
 		perror("");
@@ -64,6 +67,7 @@ struct actionReturnValue_t* ledDriver_initActionFunction() {
 	led->lastKBInputUpdate = 0;
 	led->currentBrightness = 0;
 	led->ledPatternsQueue = pa_initialize(numLeds);
+	led->sensorStateName = allocateAndConcatStrings(ledDriverActionName, nameAppendix);
 
 	setReturnStructure(&ledDriver_returnStructure, led);
 	return &ledDriver_returnStructure;
@@ -199,12 +203,13 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 	return &ledDriver_returnStructure;	
 }
 
-struct allSensorsDescription_t* ledDriver_actionStateAllSensors(){
+struct allSensorsDescription_t* ledDriver_actionStateAllSensors(gpointer ptr){
 	return &ledDriver_allSensors;
 }
 
-const char *ledDriver_getActionName() {
-	return ledDriverActionName;
+const char *ledDriver_getActionName(gpointer sensorStatePtr) {
+	struct ledDriver_sensorStat *sensorState = (struct ledDriver_sensorStat *) sensorStatePtr;
+	return sensorState->sensorStateName;
 }
 
 void ledDriver_closeActionFunction(gpointer rawSensorState) {
@@ -214,6 +219,8 @@ void ledDriver_closeActionFunction(gpointer rawSensorState) {
 }
 
 struct actionDescriptorStructure_t ledDriverActionStructure = {
+	.sensorType = "LedDriver",
+	.sensorStatePtr = NULL,
 	.initiateActionFunction = &ledDriver_initActionFunction,
 	.stateWatchedInputs     = &ledDriver_actionStateWatchedInputs,
 	.stateAllSensors        = &ledDriver_actionStateAllSensors,

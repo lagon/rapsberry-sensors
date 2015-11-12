@@ -4,6 +4,7 @@
 #define __lagon_action_queue_h__
 
 #include "utilityFunctions.h"
+#include "actionDescriptorStructure.h"
 
 typedef long (actionFunction)(GHashTable*, GHashTable*);
 

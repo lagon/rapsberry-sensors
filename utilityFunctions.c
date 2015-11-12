@@ -26,3 +26,22 @@ void logErrorMessage(const char *format, const char *detail) {
 	free(err_msg);	
 }
 
+char *allocateAndConcatStrings(const char* str1, const char *str2) {
+	char *str = (char *) malloc(strlen(str1) + strlen(str2) + 2);
+	strcpy(str, str1);
+	strcat(str, str2);
+	return str;
+}
+
+struct allSensorsDescription_t *constructAllSensorDescription(const struct allSensorsDescription_t *original, char *nameAppendix) {
+	struct allSensorsDescription_t *newDescription = (struct allSensorsDescription_t *) malloc(sizeof(struct allSensorsDescription_t) + sizeof(struct singleSensorDescription_t) * original->numSensors);
+	newDescription->numSensors = original->numSensors;
+	for (int i = 0; i < newDescription->numSensors; i++) {
+		newDescription->sensorDescriptions[i].sensorID          = allocateAndConcatStrings(original->sensorDescriptions[i].sensorID,          nameAppendix);
+		newDescription->sensorDescriptions[i].sensorDisplayName = allocateAndConcatStrings(original->sensorDescriptions[i].sensorDisplayName, nameAppendix);
+		newDescription->sensorDescriptions[i].sensorUnits       = allocateAndConcatStrings(original->sensorDescriptions[i].sensorUnits,       nameAppendix);
+		newDescription->sensorDescriptions[i].sensorValueName   = allocateAndConcatStrings(original->sensorDescriptions[i].sensorValueName,   nameAppendix);
+	}
+	return newDescription;
+}
+

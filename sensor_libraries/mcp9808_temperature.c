@@ -24,19 +24,22 @@ uint16_t convertDoubleToIntTemp(double temperature) {
 	return raw;
 }
 
-void mcp9808_initialize(struct mcp9808State *mcp9808) {
-	mcp9808->configuration = 0x0300;
+struct mcp9808State * mcp9808_initialize(struct mcp9808State *mcp9808) {
+	mcp9808->configuration = 0x0100;
 	uint16_t configuration = mcp9808->configuration; //0000 0011 0000 0000 = 1.5C hysteresis & shutdown
 	uint16_t t_crit  = convertDoubleToIntTemp(mcp9808_critical_temperature);
 	uint16_t t_upper = convertDoubleToIntTemp(mcp9808_upper_alert_boundary);
 	uint16_t t_lower = convertDoubleToIntTemp(mcp9808_lower_alert_boundary);
 	uint8_t resolution = 0x03;
 
-	i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ConfigurationRegister, configuration);
-	i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808CriticalLimitTemperatureRegister, t_crit);
-	i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808UpperLimitTemperatureRegister, t_upper);
-	i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808LowerLimitTemperatureRegister, t_lower);
-	i2c_write8bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ResolutionRegister, resolution);
+	if (i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ConfigurationRegister, configuration)     < 0 ||
+		i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808CriticalLimitTemperatureRegister, t_crit) < 0 ||
+		i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808UpperLimitTemperatureRegister, t_upper)   < 0 ||
+		i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808LowerLimitTemperatureRegister, t_lower)   < 0 ||
+		i2c_write8bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ResolutionRegister, resolution)            < 0) {
+		return NULL;
+	}
+	return mcp9808;
 }
 
 struct mcp9808State *mcp9808_initTemperatureSensor(uint8_t i2cBusID, uint8_t mcp9808Address) {
@@ -52,9 +55,13 @@ struct mcp9808State *mcp9808_initTemperatureSensor(uint8_t i2cBusID, uint8_t mcp
 	mcp9808->address = mcp9808Address;
 	mcp9808->i2cBusDevice = fd;
 
-	mcp9808_initialize(mcp9808);
-
-	return mcp9808;
+	if (mcp9808_initialize(mcp9808) == NULL) {
+		i2c_closeDevice(fd);
+		free(mcp9808);
+		return NULL;
+	} else {
+		return mcp9808;
+	}
 }
 
 void mcp9808_stopMeasuring(struct mcp9808State *mcp9808) {

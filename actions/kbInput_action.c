@@ -23,6 +23,11 @@ struct allSensorsDescription_t kbInput_noSensors = {
 	.sensorDescriptions = {}
 };
 
+struct kbInputSensorState_t {
+	char *sensorStateName;
+	char *lastChar;
+};
+
 int isKbHit() {
     struct timeval tv;
     fd_set fds;
@@ -51,11 +56,13 @@ void setTerminalNonBlockMode(int state) {
     tcsetattr(stdinFileID, TCSANOW, &ttystate);
 }
 
-struct actionReturnValue_t* kbInput_initActionFunction() {
-	char *lastChar = (char *)malloc(sizeof(char));
+struct actionReturnValue_t* kbInput_initActionFunction(char *nameAppendix, char *address) {
+	struct kbInputSensorState_t * sensorState = (struct kbInputSensorState_t *) malloc(sizeof(struct kbInputSensorState_t));
+	sensorState->sensorStateName = allocateAndConcatStrings(kbInput_actionName, nameAppendix);
+	sensorState->lastChar = (char *)malloc(sizeof(char));
 
 	setTerminalNonBlockMode(kbInput_NonBlockingTerminal);
-	kbInput_returnStructure.sensorState = lastChar;
+	kbInput_returnStructure.sensorState = sensorState;
 	kbInput_returnStructure.actionErrorStatus = 0;
 	kbInput_returnStructure.usecsToNextInvocation = kbInput_KeyboardCheckingTime;
 	kbInput_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
@@ -68,7 +75,7 @@ struct inputNotifications_t *kbInput_actionStateWatchedInputs() {
 	return &noInputsToWatch;
 }
 
-struct allSensorsDescription_t* kbInput_actionStateAllSensors() {
+struct allSensorsDescription_t* kbInput_actionStateAllSensors(gpointer sensorStatePtr) {
 	return &kbInput_noSensors;
 }
 
@@ -110,16 +117,22 @@ struct actionReturnValue_t* kbInput_actionFunction(gpointer rawSensorStatus, GHa
 	return &kbInput_returnStructure;
 }
 
-const char *kbInput_getActionName() {
-	return kbInput_actionName;
+const char *kbInput_getActionName(gpointer rawSensorStatus) {
+	struct kbInputSensorState_t * sensorState = (struct kbInputSensorState_t *) rawSensorStatus;
+	return sensorState->sensorStateName;
 }
 
 void kbInput_closeActionFunction(gpointer rawSensorStatus) {
 	setTerminalNonBlockMode(kbInput_BlockingTerminal);
+	struct kbInputSensorState_t * sensorState = (struct kbInputSensorState_t *) rawSensorStatus;
+	free(sensorState->lastChar);
+	free(sensorState->sensorStateName);
 	free(rawSensorStatus);
 }
 
 struct actionDescriptorStructure_t kbInputActionStructure = {
+	.sensorType = "KBINPUT",
+	.sensorStatePtr = NULL,
 	.initiateActionFunction = &kbInput_initActionFunction,
 	.stateWatchedInputs     = &kbInput_actionStateWatchedInputs,
 	.stateAllSensors        = &kbInput_actionStateAllSensors,

@@ -43,7 +43,7 @@ struct actionReturnValue_t {
 } actionReturnValue_t;
 
  //Initiates the action. Returns action return type. On success the actionReturnValue_t::actionErrorStatus == 0 and sensorState set to approariate state - it will be stored and passed to action function, otherwise != 0.
-typedef struct actionReturnValue_t* (*initiateActionFunction_t)();
+typedef struct actionReturnValue_t* (*initiateActionFunction_t)(char *nameAppendix, char *address);
 
 //Returns an array of watched inputs
 typedef struct inputNotifications_t* (*stateWatchedInputs_t)();
@@ -56,16 +56,18 @@ typedef struct inputNotifications_t* (*stateWatchedInputs_t)();
 typedef struct actionReturnValue_t* (*actionFunction_t)(gpointer, GHashTable*, GHashTable*);
 
 //Returns all sensors modified by this action. Useful to fill in the long storage database.
-typedef struct allSensorsDescription_t* (*stateAllSensors_t)();
+typedef struct allSensorsDescription_t* (*stateAllSensors_t)(gpointer);
 
 //Returns display name of the sensor. This name will also be used to store the sensor state, so it must be unique.
-typedef const char *(*getActionNameFunction_t)();
+typedef const char *(*getActionNameFunction_t)(gpointer);
 
 //Caled when event loop is done. Should free all the resources allocated by the action.
 typedef void (*destroyActionFunction_t)(gpointer);
 
 
 struct actionDescriptorStructure_t {
+	char *sensorType;
+	gpointer sensorStatePtr;
 	initiateActionFunction_t initiateActionFunction;
 	stateWatchedInputs_t stateWatchedInputs;
 	stateAllSensors_t stateAllSensors;
