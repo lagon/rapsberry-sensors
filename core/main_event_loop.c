@@ -266,11 +266,18 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 		_exit(-1);
 	}
 
-	int externalEventNotifierPipe = open(externalEventNotificationPipePath, O_NONBLOCK);
+	int externalEventNotifierPipe = open(externalEventNotificationPipePath, O_RDONLY | O_NONBLOCK);
 	if (externalEventNotifierPipe < 0) {
 		logErrorMessage("Unable to open external notification pipe. Reason: %s", strerror(errno));
 		return;
 	}
+
+	int externalEventNotifierPipeWriterEnd = open(externalEventNotificationPipePath, O_WRONLY);
+	if (externalEventNotifierPipeWriterEnd < 0) {
+		logErrorMessage("Unable to open external notification pipe. Reason: %s", strerror(errno));
+		return;
+	}
+
 
 	fd_set externalEventNotifiersToWatch;
 	FD_ZERO(&externalEventNotifiersToWatch);
@@ -281,7 +288,8 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 
 	while (el_wantStop == 0) {
 		int bytesRead = read(externalEventNotifierPipe, &ch, 1);
-		if (bytesRead > 0) {
+		printf("Bytes from notifier pipe: %d\n", bytesRead);
+	 	if (bytesRead > 0) {
 			printf("*********************************************\nThere is an input waiting in BD\n*********************************************\n");
 			el_readExternalInputs(eventLoop);
 		}
@@ -303,11 +311,22 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 		
 
 		if (!el_isAnyInputChangesWaiting(eventLoop)) {
-//			DEBUGPRINT("There is no new input waiting to be processed...\n", "");
 			long long usecsToNextAction = aq_usecsToNextAction(eventLoop->actionQueue);
+			printf("There is no new nput waiting to be processed will wait for %lld usec...\n", usecsToNextAction);
+
 			waitingTime.tv_usec = usecsToNextAction;
 			waitingTime.tv_sec = 0;
-			select(externalEventNotifierPipe + 1, &externalEventNotifiersToWatch, NULL, NULL, &waitingTime);
+			FD_ZERO(&externalEventNotifiersToWatch);
+			FD_SET(externalEventNotifierPipe, &externalEventNotifiersToWatch);
+
+			int selectRet = select(externalEventNotifierPipe + 100	, &externalEventNotifiersToWatch, NULL, NULL, &waitingTime);
+			// perror("Troubles in select() ");
+			// printf("Select returned %d\n", selectRet);
+			// printf("%d (notification file is set?) %d \n", externalEventNotifierPipe, FD_ISSET(externalEventNotifierPipe, &externalEventNotifiersToWatch));
+			if (selectRet < 0) {return;}
+
+		} else {
+			printf("There is some input to be processed...\n");
 		}
 		// if (loopCnt < 1) {
 		// 	break;

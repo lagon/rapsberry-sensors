@@ -127,7 +127,7 @@ void setOneGrayscaleLed(struct allLedControlStruct *ledStructure, uint8_t gsLedI
 
 
 void sendOutLedDataDefaults(struct allLedControlStruct *ledStructure, const int spi_device) {
-	sendOutLedData(ledStructure, spi_device, 1500000, 8, 0);
+	sendOutLedData(ledStructure, spi_device, 100000, 8, 0);
 }
 
 void sendOutLedData(struct allLedControlStruct *ledStructure, const int spi_device, const int speed, const unsigned int bits_per_word, const unsigned int cs_change_at_end) {

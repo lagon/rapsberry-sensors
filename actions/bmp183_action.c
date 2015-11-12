@@ -47,7 +47,7 @@ struct actionReturnValue_t* bmp183_initActionFunction(char *nameAppendix, char *
 	}
 
 	struct bmp183_sensorStat *status = (struct bmp183_sensorStat *) malloc(sizeof(struct bmp183_device));
-	status->device = bmp183_init(busID, 0, 1000000, BMP183_ULTRA_HIGH_RESOLUTION);
+	status->device = bmp183_init(busID, 0, 100000, BMP183_ULTRA_HIGH_RESOLUTION);
 	if (status->device == NULL) {
 		syslog(LOG_ERR, "Initiation of BMP183 pressure sensor failed.");
 		printf("FAILED!");

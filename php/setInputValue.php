@@ -3,8 +3,8 @@
 function notifySensorRunner() {
 	$notificationFile = "/tmp/ra_sen_notification_pipe";
 	$f = fopen($notificationFile, "w");
-	echo($f);
 	echo(fwrite($f, "1", 1));
+	echo("<br> Notification written at : " . date("Y/m/d H:i:s.u", time()) . "<br>");
 	echo(fclose($f));
 }
 
