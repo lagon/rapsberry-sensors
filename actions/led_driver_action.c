@@ -8,7 +8,7 @@
 #include <stdarg.h>
 
 const char *ledDriverActionName = "LedDriveAction";
-const int numLeds = 12;
+const int numLeds = 36;
 
 struct allSensorsDescription_t ledDriver_allSensors = {
 	.numSensors = 0,
@@ -51,7 +51,7 @@ struct actionReturnValue_t* ledDriver_initActionFunction(char *nameAppendix, cha
 		exit(-1);
 	}
 
-	struct allLedControlStruct *ledctrl = initiateLEDControls(3);
+	struct allLedControlStruct *ledctrl = initiateLEDControls(12);
 	setGlobalBrightness(ledctrl, 255);
 	struct ledPWMSettings led_settings;
 	led_settings.blank  = 0;

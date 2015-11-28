@@ -34,7 +34,7 @@ struct pa_LedStatesResults *ledPattern_setIntensityMediumFade(int time_step, int
 	if (time_step >= max_time_step) {
 		ret->nextInvocation = pa_wasLastStep;
 	} else {
-		ret->nextInvocation = 5 * 1000;
+		ret->nextInvocation = 10 * 1000;
 	}
 	return ret;
 }
