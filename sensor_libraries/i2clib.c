@@ -68,6 +68,21 @@ uint16_t i2c_read16bits(int fd, uint8_t address, uint8_t reg) {
     return rawValue;
 }
 
+uint8_t i2c_read8bits(int fd, uint8_t address, uint8_t reg) {
+    uint8_t in_data = 0;
+    if (i2c_writeToDevice(fd, address, &reg, 1) != 1) {
+        perror("");
+        syslog(LOG_ERR, "I2C - Unable to send out register address to read from");
+        return 0xFFFF;
+    };
+    if (i2c_readFromDevice(fd, address, &in_data, 1) != 1) {
+        perror("");
+        syslog(LOG_ERR, "I2C - Unable to get value");
+        return 0xFFFF;
+    }
+    return in_data;
+}
+
 int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value) {
     uint8_t out_data [3];
     out_data[0] = reg;
