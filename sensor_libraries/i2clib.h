@@ -25,6 +25,7 @@ int i2c_writeToDevice(int fd, uint8_t address, void *data, uint8_t length);
 int i2c_readFromDevice(int fd, uint8_t address, void *data, uint8_t length);
 
 uint16_t i2c_read16bits(int fd, uint8_t address, uint8_t reg);
+uint8_t i2c_read8bits(int fd, uint8_t address, uint8_t reg);
 
 int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value);
 int i2c_write8bits(int fd, uint8_t address, uint8_t reg, uint8_t value);
