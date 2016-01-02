@@ -186,7 +186,7 @@ void el_readExternalInputs(struct mainEventLoopControl_t *eventLoop) {
 
 void el_executeAction(struct actionDescriptorStructure_t *action2Execute, struct mainEventLoopControl_t *eventLoop) {
 	const char *sensorName = action2Execute->getActionNameFunction(action2Execute->sensorStatePtr);
-	printf("About to execute action %s\n", sensorName);
+//	printf("About to execute action %s\n", sensorName);
 	gpointer *sensorState = g_hash_table_lookup(eventLoop->allActionsStatuses, sensorName);
 	if (sensorState == NULL) {
 		logErrorMessage("State for sensor \"%s\" was not found. Disabling sensor.\n", sensorName);
@@ -204,7 +204,7 @@ void el_executeAction(struct actionDescriptorStructure_t *action2Execute, struct
 //		DEBUGPRINT("\tAction %s wants to be called again in future.\n", sensorName);
 		aq_addAction(eventLoop->actionQueue, ret->usecsToNextInvocation, action2Execute);
 	}
-	printf("It took %lld us to execute action %s\n", stopTime - startTime, sensorName);
+	printf("It took %lld us to execute action %s... ", stopTime - startTime, sensorName);
 
 	return;
 }
@@ -288,7 +288,7 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 
 	while (el_wantStop == 0) {
 		int bytesRead = read(externalEventNotifierPipe, &ch, 1);
-		printf("Bytes from notifier pipe: %d\n", bytesRead);
+		//printf("Bytes from notifier pipe: %d\n", bytesRead);
 	 	if (bytesRead > 0) {
 			printf("*********************************************\nThere is an input waiting in BD\n*********************************************\n");
 			el_readExternalInputs(eventLoop);
@@ -312,7 +312,7 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 
 		if (!el_isAnyInputChangesWaiting(eventLoop)) {
 			long long usecsToNextAction = aq_usecsToNextAction(eventLoop->actionQueue);
-			printf("There is no new nput waiting to be processed will wait for %lld usec...\n", usecsToNextAction);
+			printf(" no inputs -> sleeping for %'lld usec...\n", usecsToNextAction);
 
 			waitingTime.tv_usec = usecsToNextAction;
 			waitingTime.tv_sec = 0;
