@@ -32,13 +32,12 @@ struct mcp9808State * mcp9808_initialize(struct mcp9808State *mcp9808) {
 	uint16_t t_lower = convertDoubleToIntTemp(mcp9808_lower_alert_boundary);
 	uint8_t resolution = 0x03;
 
-	if (i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ConfigurationRegister, configuration)     < 0 ||
-		i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808CriticalLimitTemperatureRegister, t_crit) < 0 ||
-		i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808UpperLimitTemperatureRegister, t_upper)   < 0 ||
-		i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808LowerLimitTemperatureRegister, t_lower)   < 0 ||
-		i2c_write8bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ResolutionRegister, resolution)            < 0) {
-		return NULL;
-	}
+	if (i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ConfigurationRegister, configuration)     < 0) {return NULL;}
+	if (i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808CriticalLimitTemperatureRegister, t_crit) < 0) {return NULL;}
+	if (i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808UpperLimitTemperatureRegister, t_upper)   < 0) {return NULL;}
+	if (i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808LowerLimitTemperatureRegister, t_lower)   < 0) {return NULL;}
+	if (i2c_write8bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ResolutionRegister, resolution)            < 0) {return NULL;}
+
 	return mcp9808;
 }
 
