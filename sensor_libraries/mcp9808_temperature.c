@@ -66,13 +66,13 @@ struct mcp9808State *mcp9808_initTemperatureSensor(uint8_t i2cBusID, uint8_t mcp
 
 void mcp9808_stopMeasuring(struct mcp9808State *mcp9808) {
 	uint16_t configuration = mcp9808->configuration; //0000 0011 0000 0000 = 1.5C hysteresis & shutdown
-	configuration = configuration & 0xFEFF; // Make sure shutdown bit is 0;
+	configuration = 0x0100;
 	i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ConfigurationRegister, configuration);
 }
 
 void mcp9808_startMeasuring(struct mcp9808State *mcp9808) {
 	uint16_t configuration = mcp9808->configuration; //0000 0011 0000 0000 = 1.5C hysteresis & NO shutdown
-	configuration = configuration | 0x0100; // Make sure shutdown bit is 1;
+	configuration = configuration & 0xFEFF; // Make sure shutdown bit is 1;
 	i2c_write16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808ConfigurationRegister, configuration);
 }
 
