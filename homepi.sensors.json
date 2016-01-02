@@ -2,9 +2,9 @@
 	{"SensorType" : "H21DF",          "Name" : " On Cupboard", "SensorAddress" : "0x40"},
 	{"SensorType" : "BMP183",         "Name" : " On Cupboard", "SensorAddress" : "0"},
 	{"SensorType" : "LedDriver",      "Name" : "",             "SensorAddress" : "1"},
-	{"SensorType" : "MCP9808",        "Name" : " 3",           "SensorAddress" : "0x19"},
+	{"SensorType" : "MCP9808",        "Name" : " by the Doors", "SensorAddress" : "0x19"},
 	{"SensorType" : "MCP9808",        "Name" : " On Cupboard", "SensorAddress" : "0x18"},
-	{"SensorType" : "MCP9808",        "Name" : " Unter Table", "SensorAddress" : "0x1c"},
+	{"SensorType" : "MCP9808",        "Name" : " Under Table", "SensorAddress" : "0x1c"},
 	{"SensorType" : "DisplayPrint",   "Name" : "",             "SensorAddress" : "-1"},
 	{"SensorType" : "SQLLiteStorage", "Name" : "",             "SensorAddress" : "-1"},	
 ]
