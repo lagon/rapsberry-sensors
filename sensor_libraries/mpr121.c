@@ -67,8 +67,10 @@ void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
 		return;
 	}
 
-	uint8_t lowerSensors = i2c_read8bits(dev->bus_fd, dev->address, touchStatusRegister_0_7_address);
-	uint8_t upperSensors = i2c_read8bits(dev->bus_fd, dev->address, touchStatusRegister_8_12_address);
+	uint8_t lowerSensors, upperSensors;
+
+	i2c_read8bits(dev->bus_fd, dev->address, touchStatusRegister_0_7_address, &lowerSensors);
+	i2c_read8bits(dev->bus_fd, dev->address, touchStatusRegister_8_12_address, &upperSensors);
 
 	if ((upperSensors & 0x80) == 0) {
 		dev->dataValid = 1;
@@ -109,7 +111,8 @@ uint16_t mpr121_getElectrodeFilteredValues(struct mpr121_device *dev, uint8_t el
 		return 0xFFFF;
 	}
 	uint8_t addr = filteredElectrodeData_LSB_BaseAddress + 2 * electrodeID;
-	uint16_t value = i2c_read16bits(dev->bus_fd, dev->address, addr);
+	uint16_t value;
+	i2c_read16bits(dev->bus_fd, dev->address, addr, &value);
 	return value;
 }
 
@@ -118,9 +121,10 @@ uint16_t mpr121_getElectrodeBaseLineValue(struct mpr121_device *dev, uint8_t ele
 		return 0xFFFF;
 	}
 	uint8_t addr = filteredElectrodeData_LSB_BaseAddress + electrodeID;
-	uint16_t value = i2c_read8bits(dev->bus_fd, dev->address, addr);
-	value = value << 2;
-	return value;
+	uint8_t value;
+	i2c_read8bits(dev->bus_fd, dev->address, addr, &value);
+	uint16_t value16 = value << 2;
+	return value16;
 }
 
 int mpr121_SetTouchThreshold(struct mpr121_device *dev, uint8_t electrodeID, uint8_t threshold) {
@@ -152,13 +156,14 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 //Send Reset
 	if (i2c_write8bits(dev->bus_fd, dev->address, softResetRegister_address, 0x63) < 0) return -1; // Reset
 
-	usleep(1000);
+	usleep(10000);
 
 	mpr121_putToStopMode(dev);
 
-	usleep(1000);
+	usleep(10000);
 
-	uint16_t cfgRead = i2c_read16bits(dev->bus_fd, dev->address, 0x5E);
+	uint8_t cfgRead;
+	i2c_read8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address, &cfgRead);
 	if (cfgRead != 0x24) {
 		printf("The MPR121 did not respond properly. Should say 0x24 instead of %X. Stopping.\n", cfgRead);
 		return -10;
@@ -213,7 +218,8 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 }
 
 int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev) {
-	uint8_t status = i2c_read8bits(dev->bus_fd, dev->address, outOfRangeStatusRegister_8_12_address);
+	uint8_t status;
+	i2c_read8bits(dev->bus_fd, dev->address, outOfRangeStatusRegister_8_12_address, &status);
 	if (status == 0xFF) {
 		return -1;
 	}
@@ -226,7 +232,7 @@ int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev) {
 
 int mpr121_putToStopMode(struct mpr121_device *dev) {
 	dev->isRunningMode = 0;
-	if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, 0xFF) < 0) {
+	if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, 0x00) < 0) {
 		return -1;
 	} else {
 		return 1;
