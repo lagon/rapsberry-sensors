@@ -152,11 +152,13 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 //Send Reset
 	if (i2c_write8bits(dev->bus_fd, dev->address, softResetRegister_address, 0x63) < 0) return -1; // Reset
 
-	usleep(500000);
+	usleep(1000);
 
 	mpr121_putToStopMode(dev);
 
-	uint8_t cfgRead = i2c_read8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address);
+	usleep(1000);
+
+	uint16_t cfgRead = i2c_read16bits(dev->bus_fd, dev->address, 0x5E);
 	if (cfgRead != 0x24) {
 		printf("The MPR121 did not respond properly. Should say 0x24 instead of %X. Stopping.\n", cfgRead);
 		return -10;
@@ -224,7 +226,7 @@ int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev) {
 
 int mpr121_putToStopMode(struct mpr121_device *dev) {
 	dev->isRunningMode = 0;
-	if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, 0x00) < 0) {
+	if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, 0xFF) < 0) {
 		return -1;
 	} else {
 		return 1;

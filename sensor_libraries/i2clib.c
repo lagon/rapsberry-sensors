@@ -13,7 +13,7 @@ int i2c_initDevice(int bus_id) {
     }
 
     int fd;
-    if ((fd = open(busName, O_RDWR)) < 0) {					// Open port for reading and writing
+    if ((fd = open(busName, O_RDWR, 0)) < 0) {					// Open port for reading and writing
         printf("Failed to open i2c port\n");
         return -1;
     }
@@ -35,8 +35,17 @@ int selectDevice(int fd, uint8_t address) {
     return 0;
 }
 
+void printHexDump(char *op, uint8_t addr, void *data, uint8_t length) {
+    printf("%s from %0X: ", op, addr);
+    for (int i = 0; i < length; i++) {
+        printf("%0X ", (*(uint8_t *)(data + i)));
+    }
+    printf("\n");
+}
+
 int i2c_writeToDevice(int fd, uint8_t address, void *data, uint8_t length) {
     selectDevice(fd, address);
+    //printHexDump("Write", address, data, length);
     int written = write(fd, data, length);
     return written;
 }
@@ -44,6 +53,7 @@ int i2c_writeToDevice(int fd, uint8_t address, void *data, uint8_t length) {
 int i2c_readFromDevice(int fd, uint8_t address, void *data, uint8_t length) {
     selectDevice(fd, address);
     int readBytes = read(fd, data, length);
+    //printHexDump("Read", address, data, readBytes);
     return readBytes;    
 }
 
@@ -69,12 +79,13 @@ uint8_t i2c_read8bits(int fd, uint8_t address, uint8_t reg) {
     if (i2c_writeToDevice(fd, address, &reg, 1) != 1) {
         perror("");
         syslog(LOG_ERR, "I2C - Unable to send out register address to read from");
-        return 0xFFFF;
+        return 0xFF;
     };
+    usleep(2);
     if (i2c_readFromDevice(fd, address, &in_data, 1) != 1) {
         perror("");
         syslog(LOG_ERR, "I2C - Unable to get value");
-        return 0xFFFF;
+        return 0xFF;
     }
     return in_data;
 }
