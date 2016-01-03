@@ -1,4 +1,5 @@
 #include "mcp9808_temperature.h"
+#include <math.h>
 
 const double mcp9808_critical_temperature = 50.0;
 const double mcp9808_upper_alert_boundary = 35.0;
@@ -76,7 +77,10 @@ void mcp9808_startMeasuring(struct mcp9808State *mcp9808) {
 }
 
 double mcp9880_readTemperature(struct mcp9808State *mcp9808) {
-	uint16_t raw = i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister);
+	uint16_t raw;
+	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
+		return NAN;
+	}
 	raw = raw & 0x1FFF;
 	uint8_t sign = (raw & 0x1000) >> 12;
 	double temperature = ((double)(raw & 0x0FFF)) / 16.0;
@@ -87,17 +91,26 @@ double mcp9880_readTemperature(struct mcp9808State *mcp9808) {
 }
 
 int mcp9808_isAboveCritical(struct mcp9808State *mcp9808) {
-	uint16_t raw = i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister);
+	uint16_t raw;
+	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
+		return 0 == 1;
+	}
 	return (raw & 0x8000) == 0x8000;
 }
 
 int mcp9808_isAboveUpperLimit(struct mcp9808State *mcp9808) {
-	uint16_t raw = i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister);
+	uint16_t raw;
+	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
+		return 0 == 1;
+	}
 	return (raw & 0x4000) == 0x4000;
 }
 
 int mcp9808_isBelowLowerLimit(struct mcp9808State *mcp9808) {
-	uint16_t raw = i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister);
+	uint16_t raw;
+	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
+		return 0 == 1;
+	}
 	return (raw & 0x2000) == 0x2000;
 }
 
