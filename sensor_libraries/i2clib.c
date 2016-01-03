@@ -1,4 +1,5 @@
 #include "i2clib.h"
+#include <linux/i2c-dev.h>
 
 int i2c_initDevice(int bus_id) {
     char *busName;
@@ -51,48 +52,53 @@ uint16_t combineBytesToWord(uint8_t msb, uint8_t lsb) {
     return output;
 }
 
-uint16_t i2c_read16bits(int fd, uint8_t address, uint8_t reg) {
-    uint8_t in_data[2] = {0, 0};
-    if (i2c_writeToDevice(fd, address, &reg, 1) != 1) {
-        perror("");
-        syslog(LOG_ERR, "I2C - Unable to send out register address to read from");
-        return 0xFFFF;
-    };
-    if (i2c_readFromDevice(fd, address, in_data, 2) != 2) {
-        perror("");
-        syslog(LOG_ERR, "I2C - Unable to get value");
-        return 0xFFFF;
+int i2c_read16bits(int fd, uint8_t address, uint8_t reg, uint16_t *readData) {
+    if (selectDevice(fd, address) < 0) {
+        return -1;
     }
-    uint16_t rawValue;
-    rawValue = combineBytesToWord(in_data[0], in_data[1]);  
-    return rawValue;
+    __s32 ret = i2c_smbus_read_word_data(fd, reg);
+    if (ret < 0) {
+        return -2;
+    }
+    *readData = ret & 0x0000FFFF;
+    return 1;
 }
 
 int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value) {
-    uint8_t out_data [3];
-    out_data[0] = reg;
-    out_data[1] = (value & 0xFF00) >> 8;
-    out_data[2] = value & 0x00FF;
-
-    if (i2c_writeToDevice(fd, address, out_data, 3) != 3) {
-        perror("");
-        syslog(LOG_ERR, "I2C - Unable write 16 bits of data to device");        
+    if (selectDevice(fd, address) < 0) {
         return -1;
     }
-    return 3;
+    if (i2c_smbus_write_word_data(fd, reg, value) < 0) {
+        return -1;
+    } else {
+        return 1;
+    }
+}
+
+int i2c_read8bits(int fd, uint8_t address, uint8_t reg, uint8_t *readData) {
+    if (selectDevice(fd, address) < 0) {
+        return -1;
+    }
+
+    __s32 ret = i2c_smbus_read_byte_data(fd, reg);
+    if (ret < 0) {
+        return -2;
+    }
+
+    *readData = ret & 0x000000FF;
+    return 1;
 }
 
 int i2c_write8bits(int fd, uint8_t address, uint8_t reg, uint8_t value) {
-    uint8_t out_data [2];
-    out_data[0] = reg;
-    out_data[1] = value;
-
-    if (i2c_writeToDevice(fd, address, out_data, 2) != 2) {
-        perror("");
-        syslog(LOG_ERR, "I2C - Unable write 8 bits of data to device");        
+    if (selectDevice(fd, address) < 0) {
         return -1;
     }
-    return 2;
+
+    if (i2c_smbus_write_byte_data(fd, reg, value) < 0) {
+        return -1;
+    } else {
+        return 1;
+    }
 }
 
 void i2c_closeDevice(int fd) {
