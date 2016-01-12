@@ -70,10 +70,10 @@ int i2c_read16bits(int fd, uint8_t address, uint8_t reg, uint16_t *readData) {
     }
     __s32 ret = i2c_smbus_read_word_data(fd, reg);
     if (ret < 0) {
-        perror("Unable to read 16 bits from i2c");
+        //perror("Unable to read 16 bits from i2c");
         return -2;
     }
-    *readData = ret & 0x0000FFFF;
+    *readData = ret;// & 0x0000FFFF;
     I2CDATAPRINT("Read from", address, reg, *readData);
     return 1;
 }
@@ -83,7 +83,7 @@ int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value) {
         return -1;
     }
     if (i2c_smbus_write_word_data(fd, reg, value) < 0) {
-        perror("Unable to write 16 bits from i2c");
+        //perror("Unable to write 16 bits from i2c");
         return -1;
     }
     I2CDATAPRINT("Write to", address, reg, value);
@@ -107,10 +107,10 @@ int i2c_read8bits(int fd, uint8_t address, uint8_t reg, uint8_t *readData) {
 
     __s32 ret = i2c_smbus_read_byte_data(fd, reg);
     if (ret < 0) {
-        perror("Unable to read 8 bits from i2c");
+        //perror("Unable to read 8 bits from i2c");
         return -2;
     }
-    *readData = ret & 0x000000FF;
+    *readData = ret;// & 0x000000FF;
     I2CDATAPRINT("Read from", address, reg, *readData);
     return 1;
 }
@@ -121,7 +121,7 @@ int i2c_write8bits(int fd, uint8_t address, uint8_t reg, uint8_t value) {
     }
 
     if (i2c_smbus_write_byte_data(fd, reg, value) < 0) {
-        perror("Unable to write 8 bits from i2c");
+        //perror("Unable to write 8 bits from i2c");
         return -1;
     }
     I2CDATAPRINT("Write to", address, reg, value);

@@ -63,7 +63,7 @@ const uint8_t autoConfigTargetLevelRegister_address = 0x7F;
 const uint8_t softResetRegister_address             = 0x80;
 
 void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
-	printf("Refreshing...\n");
+//	printf("Refreshing...\n");
 	if (dev->isRunningMode == 0) { //Not running at all
 		dev->dataValid = 0;
 		return;
@@ -82,7 +82,7 @@ void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
 		dev->isRunningMode = 0;
 	}
 	dev->touchStatus = (upperSensors << 8) + lowerSensors;
-	printf("Refreshed to: %0X - from %X, %X\n", dev->touchStatus, upperSensors, lowerSensors);
+//	printf("Refreshed to: 0x%0X - from 0x%0X, 0x%0X\n", dev->touchStatus, upperSensors, lowerSensors);
 	dev->lastRefresh = getCurrentUSecs();
 }
 
@@ -203,25 +203,32 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNclTouched_address,       0x00) < 0) return -1;
 	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlTouched_address,       0x00) < 0) return -1;
 
-	//Debounding & Setup
-	if (i2c_write8bits(dev->bus_fd, dev->address, debounceTouchAndRelease_address, 0x11) < 0) return -1;
+	// //Debounding & Setup
+	// if (i2c_write8bits(dev->bus_fd, dev->address, debounceTouchAndRelease_address, 0x11) < 0) return -1;
 	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdcConfiguration_address, 0x10) < 0) return -1; // 1001 0000
 	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address, 0x20) < 0) return -1; // 0011 1100
 
-	//Set GPIO
-	if (i2c_write8bits(dev->bus_fd, dev->address, gpioControlRegister0_address, 0x00) < 0) return -1; 
-	if (i2c_write8bits(dev->bus_fd, dev->address, gpioControlRegister1_address, 0x00) < 0) return -1;
+	// //Set GPIO
+	// if (i2c_write8bits(dev->bus_fd, dev->address, gpioControlRegister0_address, 0x00) < 0) return -1; 
+	// if (i2c_write8bits(dev->bus_fd, dev->address, gpioControlRegister1_address, 0x00) < 0) return -1;
 	
-	if (i2c_write8bits(dev->bus_fd, dev->address, gpioDirectionRegister_address, 0x00) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, gpioEnableRegister_address, 0xFF) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, gpioDirectionRegister_address, 0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, gpioEnableRegister_address, 0xFF) < 0) return -1;
 
 
-	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigLslRegister_address, 0x00) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigUslRegister_address, 0x00) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigTargetLevelRegister_address, 0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigLslRegister_address, 0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigUslRegister_address, 0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigTargetLevelRegister_address, 0x00) < 0) return -1;
 
-	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigControlRegister1_address, 0x00) < 0) return -1; // 0XXX 0000
-	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigControlRegister0_address, 0xB3) < 0) return -1; // 1011 0011
+	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigControlRegister1_address, 0x00) < 0) return -1; // 0XXX 0000
+	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigControlRegister0_address, 0xB3) < 0) return -1; // 1011 0011
+
+	printf("Waiting while autoconfiguration in progress ");
+	while(mpr121_isAutoConfigurastionDone(dev) <= 0) {
+		printf(".");
+		usleep(500000);
+	}
+	printf("Done\n");
 
 	return 1;
 }
@@ -257,10 +264,11 @@ int mpr121_putToRunningMode(struct mpr121_device *dev) {
 		return 0;
 	} else {
 		//Switch to running mode
-		uint8_t outData = 0xC0;
+		uint8_t maxEle = dev->maxElectrodeToTrack == 12 ? 0x0F : dev->maxElectrodeToTrack; //To match output from Adafruit
+		uint8_t outData = 0x80;
 		outData = outData | ((dev->proximitySensorSize & 0x03) << 4);
-		outData = outData | (dev->maxElectrodeToTrack & 0x0F);
-		printf("%0X\n", outData);
+		outData = outData | (maxEle & 0x0F);
+//		printf("%0X\n", outData);
 		if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, outData) < 0) {
 			return -1;
 		} // 0011 1111
@@ -316,6 +324,13 @@ void mpr121_finishAndClose(struct mpr121_device *dev) {
 
 void test_mpr121() {
     struct mpr121_device * dev = mpr121_initializeWithAllElectrodesEnabled(1,0x5A);
+    uint8_t sensors[14];
+    uint8_t newSensors[14];
+    for (int i = 0; i < 14; i++) {
+    	sensors[i] = 0;
+    	newSensors[i] = 0;
+    }
+
 
     while(1) {
         if (dev->isRunningMode == 0) {
@@ -326,15 +341,28 @@ void test_mpr121() {
                 printf("down and stop for some reason\n");
             }
         } else {
-            printf("Touch status: ");
+            //printf("Touch status: ");
             for (int i = 0; i < 14; i++) {
                 if (mpr121_isElectrodeTouched(dev, i) > 0) {
-                    printf("X");
+                    newSensors[i] = 1;
                 } else {
-                    printf(".");
+                    newSensors[i] = 0;
                 }
             }
-            printf("\n");
+            uint8_t someChange = 0;
+            for (int i = 0; i < 14; i++) {
+            	if (sensors[i] != newSensors[i]) {
+            		someChange = 1;
+            	}
+            	sensors[i] = newSensors[i];
+            }
+
+            if (someChange == 1) {
+	            for (int i = 0; i < 14; i++) {
+	            	printf("%c", sensors[i] == 0 ? ' ' : 'X');
+    	        }
+    	        printf("\n");
+			}
         }
         usleep(500000);
     }
