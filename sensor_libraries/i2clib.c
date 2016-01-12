@@ -1,6 +1,9 @@
 #include "i2clib.h"
 #include <linux/i2c-dev.h>
 
+#define I2CDATAPRINT(op, busAddr, reg, data) printf("%s address 0x%0X register 0x%0X data 0x%0X\n", op, busAddr, reg, data);
+//#define I2CDATAPRINT(op, busAddr, reg, data)
+
 int i2c_initDevice(int bus_id) {
     char *busName;
     if (bus_id == 0) {
@@ -52,6 +55,15 @@ uint16_t combineBytesToWord(uint8_t msb, uint8_t lsb) {
     return output;
 }
 
+int i2c_read16bitsWithRetry(int fd, uint8_t address, uint8_t reg, uint16_t *readData, uint8_t retries) {
+    int ret = -10;
+    while ((ret < 0) && (retries > 0)) {
+        ret = i2c_read16bits(fd, address, reg, readData);
+        retries--;
+    }
+    return ret;
+}
+
 int i2c_read16bits(int fd, uint8_t address, uint8_t reg, uint16_t *readData) {
     if (selectDevice(fd, address) < 0) {
         return -1;
@@ -62,7 +74,7 @@ int i2c_read16bits(int fd, uint8_t address, uint8_t reg, uint16_t *readData) {
         return -2;
     }
     *readData = ret & 0x0000FFFF;
-    printf("Read from address 0x%0X register 0x%0X data 0x%0X (0x%0X)\n", address, reg, ret, *readData);
+    I2CDATAPRINT("Read from", address, reg, *readData);
     return 1;
 }
 
@@ -74,9 +86,19 @@ int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value) {
         perror("Unable to write 16 bits from i2c");
         return -1;
     }
-    printf("Write to address 0x%0X register 0x%0X data 0x%0X\n", address, reg, value);
+    I2CDATAPRINT("Write to", address, reg, value);
     return 1;
 }
+
+int i2c_read8bitsWithRetry(int fd, uint8_t address, uint8_t reg, uint8_t *readData, uint8_t retries) {
+    int ret = -10;
+    while ((ret < 0) && (retries > 0)) {
+        ret = i2c_read8bits(fd, address, reg, readData);
+        retries--;
+    }
+    return ret;
+}
+
 
 int i2c_read8bits(int fd, uint8_t address, uint8_t reg, uint8_t *readData) {
     if (selectDevice(fd, address) < 0) {
@@ -89,7 +111,7 @@ int i2c_read8bits(int fd, uint8_t address, uint8_t reg, uint8_t *readData) {
         return -2;
     }
     *readData = ret & 0x000000FF;
-    printf("Read from address 0x%0X register 0x%0X data 0x%0X (0x%0X)\n", address, reg, ret, *readData);
+    I2CDATAPRINT("Read from", address, reg, *readData);
     return 1;
 }
 
@@ -102,7 +124,7 @@ int i2c_write8bits(int fd, uint8_t address, uint8_t reg, uint8_t value) {
         perror("Unable to write 8 bits from i2c");
         return -1;
     }
-    printf("Write to address 0x%0X register 0x%0X data 0x%0X\n", address, reg, value);
+    I2CDATAPRINT("Write to", address, reg, value);
     return 1;
 }
 

@@ -3,6 +3,8 @@
 #include <utilityFunctions.h>
 #include <i2clib.h>
 
+const uint8_t mpr121_retryCount = 10;
+
 const uint8_t touchStatusRegister_0_7_address       = 0x00;
 const uint8_t touchStatusRegister_8_12_address      = 0x01;
 const uint8_t outOfRangeStatusRegister_0_7_address  = 0x02;
@@ -69,8 +71,8 @@ void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
 
 	uint8_t lowerSensors, upperSensors;
 
-	i2c_read8bits(dev->bus_fd, dev->address, touchStatusRegister_0_7_address, &lowerSensors);
-	i2c_read8bits(dev->bus_fd, dev->address, touchStatusRegister_8_12_address, &upperSensors);
+	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, touchStatusRegister_0_7_address, &lowerSensors, mpr121_retryCount);
+	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, touchStatusRegister_8_12_address, &upperSensors, mpr121_retryCount);
 
 	if ((upperSensors & 0x80) == 0) {
 		dev->dataValid = 1;
@@ -112,7 +114,7 @@ uint16_t mpr121_getElectrodeFilteredValues(struct mpr121_device *dev, uint8_t el
 	}
 	uint8_t addr = filteredElectrodeData_LSB_BaseAddress + 2 * electrodeID;
 	uint16_t value;
-	i2c_read16bits(dev->bus_fd, dev->address, addr, &value);
+	i2c_read16bitsWithRetry(dev->bus_fd, dev->address, addr, &value, mpr121_retryCount);
 	return value;
 }
 
@@ -122,7 +124,7 @@ uint16_t mpr121_getElectrodeBaseLineValue(struct mpr121_device *dev, uint8_t ele
 	}
 	uint8_t addr = filteredElectrodeData_LSB_BaseAddress + electrodeID;
 	uint8_t value;
-	i2c_read8bits(dev->bus_fd, dev->address, addr, &value);
+	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, addr, &value, mpr121_retryCount);
 	uint16_t value16 = value << 2;
 	return value16;
 }
@@ -163,49 +165,56 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 	usleep(10000);
 
 	uint8_t cfgRead;
-	i2c_read8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address, &cfgRead);
+	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, globalCdtConfiguration_address, &cfgRead, mpr121_retryCount);
 	if (cfgRead != 0x24) {
 		printf("The MPR121 did not respond properly. Should say 0x24 instead of %X. Stopping.\n", cfgRead);
 		return -10;
 	}
 
+	//Set thresholds
+	for (int electrodeID = 0; electrodeID < 12; electrodeID++) {
+		if(mpr121_SetTouchThreshold(dev, electrodeID, 0x0C) < 0) return -1;
+		if(mpr121_SetReleaseThreshold(dev, electrodeID, 0x06) < 0) return -1;
+	}
 
-//Set GPIO
+	//Filtering
+	if (i2c_write8bits(dev->bus_fd, dev->address, mhdRising_address,        0x01) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, nhdAmountRising_address,  0x01) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, nclRising_address,        0x0E) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, fdlRising_address,        0x00) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, mhdFalling_address,       0x01) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, ndhAmountFalling_address, 0x05) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, nclFalling_address,       0x01) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, fdlFalling_address,       0x00) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, nhdAmountTouched_address, 0x00) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, nclTouched_address,       0x00) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, fdlTouched_address,       0x00) < 0) return -1;
+
+	//Proximity Filtering
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxMhdRising_address,        0x01) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNdhAmountRising_address,  0x01) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNclRising_address,        0x0E) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlRising_address,        0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxMhdFalling_address,       0x01) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNdhAmountFalling_address, 0x05) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNclFalling_address,       0x01) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlFalling_address,       0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNhdAmountTouched_address, 0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNclTouched_address,       0x00) < 0) return -1;
+	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlTouched_address,       0x00) < 0) return -1;
+
+	//Debounding & Setup
+	if (i2c_write8bits(dev->bus_fd, dev->address, debounceTouchAndRelease_address, 0x11) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdcConfiguration_address, 0x10) < 0) return -1; // 1001 0000
+	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address, 0x20) < 0) return -1; // 0011 1100
+
+	//Set GPIO
 	if (i2c_write8bits(dev->bus_fd, dev->address, gpioControlRegister0_address, 0x00) < 0) return -1; 
 	if (i2c_write8bits(dev->bus_fd, dev->address, gpioControlRegister1_address, 0x00) < 0) return -1;
+	
 	if (i2c_write8bits(dev->bus_fd, dev->address, gpioDirectionRegister_address, 0x00) < 0) return -1;
 	if (i2c_write8bits(dev->bus_fd, dev->address, gpioEnableRegister_address, 0xFF) < 0) return -1;
 
-	if (i2c_write8bits(dev->bus_fd, dev->address, mhdRising_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, nhdAmountRising_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, nclRising_address, 0x00) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, fdlRising_address, 0x00) < 0) return -1;
-
-	if (i2c_write8bits(dev->bus_fd, dev->address, mhdFalling_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, ndhAmountFalling_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, nclFalling_address, 0xFF) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, fdlFalling_address, 0x02) < 0) return -1;
-
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxMhdRising_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNdhAmountRising_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNclRising_address, 0x00) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlRising_address, 0x00) < 0) return -1;
-
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxMhdFalling_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNdhAmountFalling_address, 0x01) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxNclFalling_address, 0xFF) < 0) return -1;
-	if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlFalling_address, 0x02) < 0) return -1;
-
-	for (int electrodeID = 0; electrodeID < 13; electrodeID++) {
-		if(mpr121_SetTouchThreshold(dev, electrodeID, 0x06) < 0) return -1;
-		if(mpr121_SetReleaseThreshold(dev, electrodeID, 0x0A) < 0) return -1;
-	}
-
-
-	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdcConfiguration_address, 0x90) < 0) return -1; // 1001 0000
-	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address, 0x3C) < 0) return -1; // 0011 1100
-
-	if (i2c_write8bits(dev->bus_fd, dev->address, debounceTouchAndRelease_address, 0x11) < 0) return -1;
 
 	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigLslRegister_address, 0x00) < 0) return -1;
 	if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigUslRegister_address, 0x00) < 0) return -1;
@@ -219,7 +228,7 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 
 int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev) {
 	uint8_t status;
-	i2c_read8bits(dev->bus_fd, dev->address, outOfRangeStatusRegister_8_12_address, &status);
+	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, outOfRangeStatusRegister_8_12_address, &status, mpr121_retryCount);
 	if (status == 0xFF) {
 		return -1;
 	}
@@ -276,11 +285,11 @@ struct mpr121_device *mpr121_initializeWithAllElectrodesEnabled(int bus_id, uint
 	dev->bus_fd = bus_fd;
 	dev->address = address;
 
-	dev->measurementRefreshIntervalUsec	= 200 * 1000;
+	dev->measurementRefreshIntervalUsec	= 1000;
 	dev->lastRefresh = 0;
 	dev->isRunningMode = 0;
 	dev->maxElectrodeToTrack = 12;
-	dev->proximitySensorSize = 3;
+	dev->proximitySensorSize = 0;
 
 	if (mpr121_resetAndSetup(dev) < 0) {
 		i2c_closeDevice(bus_fd);
@@ -305,5 +314,30 @@ void mpr121_finishAndClose(struct mpr121_device *dev) {
 	free(dev);
 }
 
+void test_mpr121() {
+    struct mpr121_device * dev = mpr121_initializeWithAllElectrodesEnabled(1,0x5A);
 
+    while(1) {
+        if (dev->isRunningMode == 0) {
+            printf("mpr121 in stop mode. Enabling...");
+            if (mpr121_putToRunningMode(dev) > 0) {
+                printf("up & running\n");
+            } else {
+                printf("down and stop for some reason\n");
+            }
+        } else {
+            printf("Touch status: ");
+            for (int i = 0; i < 14; i++) {
+                if (mpr121_isElectrodeTouched(dev, i) > 0) {
+                    printf("X");
+                } else {
+                    printf(".");
+                }
+            }
+            printf("\n");
+        }
+        usleep(500000);
+    }
+
+}
 
