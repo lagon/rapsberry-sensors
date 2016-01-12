@@ -29,4 +29,6 @@ int mpr121_putToRunningMode(struct mpr121_device *dev);
 struct mpr121_device *mpr121_initializeWithAllElectrodesEnabled(int bus_id, uint8_t address);
 void mpr121_finishAndClose(struct mpr121_device *dev);
 
+void test_mpr121();
+
 #endif

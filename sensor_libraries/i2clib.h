@@ -19,9 +19,11 @@
 
 int i2c_initDevice(int bus_id);
 
+int i2c_read16bitsWithRetry(int fd, uint8_t address, uint8_t reg, uint16_t *readData, uint8_t retries);
 int i2c_read16bits(int fd, uint8_t address, uint8_t reg, uint16_t *readData);
 int i2c_write16bits(int fd, uint8_t address, uint8_t reg, uint16_t value);
 
+int i2c_read8bitsWithRetry(int fd, uint8_t address, uint8_t reg, uint8_t *readData, uint8_t retries);
 int i2c_read8bits(int fd, uint8_t address, uint8_t reg, uint8_t *readData);
 int i2c_write8bits(int fd, uint8_t address, uint8_t reg, uint8_t value);
 
