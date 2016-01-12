@@ -12,6 +12,11 @@ const uint8_t mcp9808CriticalLimitTemperatureRegister = 0x04;
 const uint8_t mcp9808AmbientTemperatureRegister = 0x05;
 const uint8_t mcp9808ResolutionRegister = 0x05;
 
+uint16_t changeEndian16(uint16_t input) {
+	uint16_t output = ((input & 0xFF00) >> 8) | ((input & 0x00FF) << 8);
+	return output;
+}
+
 uint16_t convertDoubleToIntTemp(double temperature) {
 	uint8_t sign = 0;
 	if (temperature < 0) {
@@ -81,6 +86,7 @@ double mcp9880_readTemperature(struct mcp9808State *mcp9808) {
 	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
 		return NAN;
 	}
+	raw = changeEndian16(raw);
 	raw = raw & 0x1FFF;
 	uint8_t sign = (raw & 0x1000) >> 12;
 	double temperature = ((double)(raw & 0x0FFF)) / 16.0;
@@ -95,6 +101,7 @@ int mcp9808_isAboveCritical(struct mcp9808State *mcp9808) {
 	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
 		return 0 == 1;
 	}
+	raw = changeEndian16(raw);
 	return (raw & 0x8000) == 0x8000;
 }
 
@@ -103,6 +110,7 @@ int mcp9808_isAboveUpperLimit(struct mcp9808State *mcp9808) {
 	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
 		return 0 == 1;
 	}
+	raw = changeEndian16(raw);
 	return (raw & 0x4000) == 0x4000;
 }
 
@@ -111,6 +119,7 @@ int mcp9808_isBelowLowerLimit(struct mcp9808State *mcp9808) {
 	if (i2c_read16bits(mcp9808->i2cBusDevice, mcp9808->address, mcp9808AmbientTemperatureRegister, &raw) < 0) {
 		return 0 == 1;
 	}
+	raw = changeEndian16(raw);
 	return (raw & 0x2000) == 0x2000;
 }
 
