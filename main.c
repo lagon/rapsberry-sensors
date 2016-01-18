@@ -58,6 +58,34 @@ void initialize(const char *configurationFile) {
     g_list_free_full(configuredSensors, &freeSingleSensorConfiguration);
 }
 
+void test_mpr121() {
+    struct mpr121_device * dev = mpr121_initializeWithAllElectrodesEnabled(1,0x5A);
+
+    while(1) {
+        if (dev->isRunningMode == 0) {
+            printf("mpr121 in stop mode. Enabling...");
+            if (mpr121_putToRunningMode(dev) > 0) {
+                printf("up & running\n");
+            } else {
+                printf("down and stop for some reason\n");
+            }
+        } else {
+            printf("Touch status: ");
+            for (int i = 0; i < 14; i++) {
+                if (mpr121_isElectrodeTouched(dev, i) > 0) {
+                    printf("X");
+                } else {
+                    printf(".");
+                }
+            }
+            printf("\n");
+        }
+        usleep(1000000);
+    }
+
+}
+
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         printf("Usage is %s <configuration file>.json\n", argv[0]);
