@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
 
-    test_mpr121();
+    //test_mpr121();
     
     initialize(argv[1]);
     el_runEventLoop(mainEventLoop);

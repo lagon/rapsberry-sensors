@@ -19,14 +19,19 @@ struct mpr121_device {
 };
 
 
+struct mpr121_device *mpr121_initializeWithAllElectrodesEnabled(int bus_id, uint8_t address);
+struct mpr121_device *mpr121_initializeWithSomeElectrodesEnabled(int bus_id, uint8_t address, uint8_t numElectrodes);
+
+int mpr121_resetAndSetup(struct mpr121_device *dev);
+int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev);
+
+int mpr121_putToStopMode(struct mpr121_device *dev);
+int mpr121_putToRunningMode(struct mpr121_device *dev);
+
 int mpr121_isElectrodeTouched(struct mpr121_device *dev, uint8_t electrodeID);
 uint16_t mpr121_getElectrodeFilteredValues(struct mpr121_device *dev, uint8_t electrodeID);
 uint16_t mpr121_getElectrodeBaseLineValue(struct mpr121_device *dev, uint8_t electrodeID);
-int mpr121_resetAndSetup(struct mpr121_device *dev);
-int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev);
-int mpr121_putToStopMode(struct mpr121_device *dev);
-int mpr121_putToRunningMode(struct mpr121_device *dev);
-struct mpr121_device *mpr121_initializeWithAllElectrodesEnabled(int bus_id, uint8_t address);
+
 void mpr121_finishAndClose(struct mpr121_device *dev);
 
 void test_mpr121();

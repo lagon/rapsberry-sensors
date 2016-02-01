@@ -62,6 +62,12 @@ const uint8_t autoConfigLslRegister_address         = 0x7E;
 const uint8_t autoConfigTargetLevelRegister_address = 0x7F;
 const uint8_t softResetRegister_address             = 0x80;
 
+<<<<<<< HEAD
+=======
+int mpr121_read8bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg, uint8_t *readData, uint8_t retries);
+int mpr121_read16bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg, uint16_t *readData, uint8_t retries);
+
+>>>>>>> da4c69ca01aaa83fcf38c42cc2eb6d1088f438ff
 void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
 //	printf("Refreshing...\n");
 	if (dev->isRunningMode == 0) { //Not running at all
@@ -71,16 +77,16 @@ void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
 
 	uint8_t lowerSensors, upperSensors;
 
-	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, touchStatusRegister_0_7_address, &lowerSensors, mpr121_retryCount);
-	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, touchStatusRegister_8_12_address, &upperSensors, mpr121_retryCount);
+	mpr121_read8bitsWithResetAfterTimeout(dev, touchStatusRegister_0_7_address, &lowerSensors, mpr121_retryCount);
+	mpr121_read8bitsWithResetAfterTimeout(dev, touchStatusRegister_8_12_address, &upperSensors, mpr121_retryCount);
 
-	if ((upperSensors & 0x80) == 0) {
+	// if ((upperSensors & 0x80) == 0) {
 		dev->dataValid = 1;
 		dev->isRunningMode = 1;
-	} else {
-		dev->dataValid = 0;
-		dev->isRunningMode = 0;
-	}
+	// } else {
+	// 	dev->dataValid = 0;
+	// 	dev->isRunningMode = 0;
+	// }
 	dev->touchStatus = (upperSensors << 8) + lowerSensors;
 //	printf("Refreshed to: 0x%0X - from 0x%0X, 0x%0X\n", dev->touchStatus, upperSensors, lowerSensors);
 	dev->lastRefresh = getCurrentUSecs();
@@ -114,7 +120,7 @@ uint16_t mpr121_getElectrodeFilteredValues(struct mpr121_device *dev, uint8_t el
 	}
 	uint8_t addr = filteredElectrodeData_LSB_BaseAddress + 2 * electrodeID;
 	uint16_t value;
-	i2c_read16bitsWithRetry(dev->bus_fd, dev->address, addr, &value, mpr121_retryCount);
+	mpr121_read16bitsWithResetAfterTimeout(dev, addr, &value, mpr121_retryCount);
 	return value;
 }
 
@@ -124,7 +130,7 @@ uint16_t mpr121_getElectrodeBaseLineValue(struct mpr121_device *dev, uint8_t ele
 	}
 	uint8_t addr = filteredElectrodeData_LSB_BaseAddress + electrodeID;
 	uint8_t value;
-	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, addr, &value, mpr121_retryCount);
+	mpr121_read8bitsWithResetAfterTimeout(dev, addr, &value, mpr121_retryCount);
 	uint16_t value16 = value << 2;
 	return value16;
 }
@@ -153,22 +159,37 @@ int mpr121_SetReleaseThreshold(struct mpr121_device *dev, uint8_t electrodeID, u
 	}
 }
 
+int checkAfterResetReply(struct mpr121_device *dev) {
+	uint8_t retries = mpr121_retryCount;
+	uint8_t cfgRead;
+	while (retries > 0) {
+		i2c_read8bitsWithRetry(dev->bus_fd, dev->address, globalCdtConfiguration_address, &cfgRead, mpr121_retryCount);
+		if (cfgRead == 0x24) {
+			cfgRead = 1;
+			break;
+		}
+		cfgRead--;
+		usleep(50000);
+	}
+
+	if (cfgRead <= 0) {
+			printf("The MPR121 did not respond properly. Should say 0x24 instead of %X. Stopping.\n", cfgRead);
+			return -10;		
+	}
+	return 1;
+}
 
 int mpr121_resetAndSetup(struct mpr121_device *dev) {
 //Send Reset
 	if (i2c_write8bits(dev->bus_fd, dev->address, softResetRegister_address, 0x63) < 0) return -1; // Reset
 
-	usleep(10000);
+	//usleep(10000);
 
 	mpr121_putToStopMode(dev);
 
-	usleep(10000);
+	//usleep(10000);
 
-	uint8_t cfgRead;
-	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, globalCdtConfiguration_address, &cfgRead, mpr121_retryCount);
-
-	if (cfgRead != 0x24) {
-		printf("The MPR121 did not respond properly. Should say 0x24 instead of %X. Stopping.\n", cfgRead);
+	if (checkAfterResetReply(dev) < 0) {
 		return -10;
 	}
 
@@ -224,19 +245,46 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigControlRegister1_address, 0x00) < 0) return -1; // 0XXX 0000
 	// if (i2c_write8bits(dev->bus_fd, dev->address, autoConfigControlRegister0_address, 0xB3) < 0) return -1; // 1011 0011
 
-	printf("Waiting while autoconfiguration in progress ");
-	while(mpr121_isAutoConfigurastionDone(dev) <= 0) {
-		printf(".");
-		usleep(500000);
-	}
-	printf("Done\n");
+	// printf("Waiting while autoconfiguration in progress ");
+	// while(mpr121_isAutoConfigurastionDone(dev) <= 0) {
+	// 	printf(".");
+	// 	usleep(500000);
+	// }
+	// printf("Done\n");
 
 	return 1;
 }
 
+int mpr121_read16bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg, uint16_t *readData, uint8_t retries) {
+    int ret = -10;
+    while ((ret < 0) && (retries > 0)) {
+        ret = i2c_read16bits(dev->bus_fd, dev->address, reg, readData);
+        if (ret > 0) {
+        	break;
+        }
+        mpr121_resetAndSetup(dev);
+        retries--;
+    }
+    return ret;
+}
+
+int mpr121_read8bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg, uint8_t *readData, uint8_t retries) {
+    int ret = -10;
+    while ((ret < 0) && (retries > 0)) {
+        ret = i2c_read8bits(dev->bus_fd, dev->address, reg, readData);
+        if (ret > 0) {
+        	break;
+        }
+        mpr121_resetAndSetup(dev);
+        retries--;
+    }
+    return ret;
+}
+
+
 int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev) {
 	uint8_t status;
-	i2c_read8bitsWithRetry(dev->bus_fd, dev->address, outOfRangeStatusRegister_8_12_address, &status, mpr121_retryCount);
+	mpr121_read8bitsWithResetAfterTimeout(dev, outOfRangeStatusRegister_8_12_address, &status, mpr121_retryCount);
 	if (status == 0xFF) {
 		return -1;
 	}
@@ -281,6 +329,10 @@ int mpr121_putToRunningMode(struct mpr121_device *dev) {
 
 
 struct mpr121_device *mpr121_initializeWithAllElectrodesEnabled(int bus_id, uint8_t address) {
+	return mpr121_initializeWithSomeElectrodesEnabled(bus_id, address, 13);
+}
+
+struct mpr121_device *mpr121_initializeWithSomeElectrodesEnabled(int bus_id, uint8_t address, uint8_t numElectrodes) {
 	int bus_fd = i2c_initDevice(bus_id);
 	if (bus_fd < 0) {
 		return NULL;
@@ -297,7 +349,7 @@ struct mpr121_device *mpr121_initializeWithAllElectrodesEnabled(int bus_id, uint
 	dev->measurementRefreshIntervalUsec	= 1000;
 	dev->lastRefresh = 0;
 	dev->isRunningMode = 0;
-	dev->maxElectrodeToTrack = 12;
+	dev->maxElectrodeToTrack = numElectrodes;
 	dev->proximitySensorSize = 0;
 
 	if (mpr121_resetAndSetup(dev) < 0) {
@@ -324,9 +376,9 @@ void mpr121_finishAndClose(struct mpr121_device *dev) {
 }
 
 void test_mpr121() {
-    struct mpr121_device * dev = mpr121_initializeWithAllElectrodesEnabled(1,0x5A);
-    uint8_t sensors[14];
-    uint8_t newSensors[14];
+    struct mpr121_device * dev = mpr121_initializeWithSomeElectrodesEnabled(1,0x5A, 4);
+    int8_t sensors[14];
+    int8_t newSensors[14];
     for (int i = 0; i < 14; i++) {
     	sensors[i] = 0;
     	newSensors[i] = 0;
@@ -336,6 +388,7 @@ void test_mpr121() {
     while(1) {
         if (dev->isRunningMode == 0) {
             printf("mpr121 in stop mode. Enabling...");
+            //mpr121_resetAndSetup(dev);
             if (mpr121_putToRunningMode(dev) > 0) {
                 printf("up & running\n");
             } else {
@@ -344,10 +397,14 @@ void test_mpr121() {
         } else {
             //printf("Touch status: ");
             for (int i = 0; i < 14; i++) {
-                if (mpr121_isElectrodeTouched(dev, i) > 0) {
+            	int sensStat = mpr121_isElectrodeTouched(dev, i);
+                if (sensStat > 0) {
                     newSensors[i] = 1;
-                } else {
+                } else if (sensStat == 0) {
                     newSensors[i] = 0;
+                } else {
+                	printf("err\n");
+                	continue;
                 }
             }
             uint8_t someChange = 0;
@@ -360,12 +417,19 @@ void test_mpr121() {
 
             if (someChange == 1) {
 	            for (int i = 0; i < 14; i++) {
-	            	printf("%c", sensors[i] == 0 ? ' ' : 'X');
+	            	printf("%c", sensors[i] == 0 ? ' ' : i+0x30);
     	        }
     	        printf("\n");
 			}
+			// for (int i = 0; i < 14; i++) {
+			// 	uint16_t value = mpr121_getElectrodeFilteredValues(dev, i);
+			// 	printf(" %05d", value);
+			// }
+			// printf("\n");
+			
+
         }
-        usleep(500000);
+        usleep(100000);
     }
 
 }
