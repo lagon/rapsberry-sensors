@@ -1,8 +1,8 @@
 #include "i2clib.h"
 #include <linux/i2c-dev.h>
 
-#define I2CDATAPRINT(op, busAddr, reg, data) printf("%s address 0x%0X register 0x%0X data 0x%0X\n", op, busAddr, reg, data);
-//#define I2CDATAPRINT(op, busAddr, reg, data)
+//#define I2CDATAPRINT(op, busAddr, reg, data) printf("%s address 0x%0X register 0x%0X data 0x%0X\n", op, busAddr, reg, data);
+#define I2CDATAPRINT(op, busAddr, reg, data)
 
 int i2c_initDevice(int bus_id) {
     char *busName;
