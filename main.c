@@ -22,6 +22,8 @@
 #include "led_driver_action.h"
 #include "sensorConfigParser.h"
 
+#include "mpr121.h"
+
 // EXPERIMENTAL --------- 
 // #include "led_experiments.h"
 // #include "ina219_power_monitor.h"
@@ -64,6 +66,9 @@ int main(int argc, char **argv) {
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
 
+
+//    test_mpr121();
+    
     initialize(argv[1]);
     el_runEventLoop(mainEventLoop);
     return 0;
