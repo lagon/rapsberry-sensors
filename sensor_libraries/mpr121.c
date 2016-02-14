@@ -62,12 +62,9 @@ const uint8_t autoConfigLslRegister_address         = 0x7E;
 const uint8_t autoConfigTargetLevelRegister_address = 0x7F;
 const uint8_t softResetRegister_address             = 0x80;
 
-<<<<<<< HEAD
-=======
 int mpr121_read8bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg, uint8_t *readData, uint8_t retries);
 int mpr121_read16bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg, uint16_t *readData, uint8_t retries);
 
->>>>>>> da4c69ca01aaa83fcf38c42cc2eb6d1088f438ff
 void _mpr121_refreshTouchStatus(struct mpr121_device *dev) {
 //	printf("Refreshing...\n");
 	if (dev->isRunningMode == 0) { //Not running at all
@@ -226,7 +223,7 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 	// if (i2c_write8bits(dev->bus_fd, dev->address, eleproxFdlTouched_address,       0x00) < 0) return -1;
 
 	// //Debounding & Setup
-	// if (i2c_write8bits(dev->bus_fd, dev->address, debounceTouchAndRelease_address, 0x11) < 0) return -1;
+	if (i2c_write8bits(dev->bus_fd, dev->address, debounceTouchAndRelease_address, 0x00) < 0) return -1;
 	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdcConfiguration_address, 0x10) < 0) return -1; // 1001 0000
 	if (i2c_write8bits(dev->bus_fd, dev->address, globalCdtConfiguration_address, 0x20) < 0) return -1; // 0011 1100
 
@@ -250,7 +247,8 @@ int mpr121_resetAndSetup(struct mpr121_device *dev) {
 	// 	printf(".");
 	// 	usleep(500000);
 	// }
-	// printf("Done\n");
+	mpr121_putToRunningMode(dev);
+	//printf("Done\n");
 
 	return 1;
 }
@@ -262,6 +260,7 @@ int mpr121_read16bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t re
         if (ret > 0) {
         	break;
         }
+        //printf("TIMEOUT1\n");
         mpr121_resetAndSetup(dev);
         retries--;
     }
@@ -275,6 +274,7 @@ int mpr121_read8bitsWithResetAfterTimeout(struct mpr121_device *dev, uint8_t reg
         if (ret > 0) {
         	break;
         }
+        //printf("TIMEOUT2\n");
         mpr121_resetAndSetup(dev);
         retries--;
     }
@@ -297,7 +297,7 @@ int mpr121_isAutoConfigurastionDone(struct mpr121_device *dev) {
 
 int mpr121_putToStopMode(struct mpr121_device *dev) {
 	dev->isRunningMode = 0;
-	if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, 0xFF) < 0) {
+	if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, 0x00) < 0) {
 		return -1;
 	} else {
 		return 1;
@@ -317,7 +317,7 @@ int mpr121_putToRunningMode(struct mpr121_device *dev) {
 		uint8_t outData = 0x80;
 		outData = outData | ((dev->proximitySensorSize & 0x03) << 4);
 		outData = outData | (maxEle & 0x0F);
-//		printf("%0X\n", outData);
+		printf("%0X\n", outData);
 		if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, outData) < 0) {
 			return -1;
 		} // 0011 1111
@@ -346,7 +346,7 @@ struct mpr121_device *mpr121_initializeWithSomeElectrodesEnabled(int bus_id, uin
 	dev->bus_fd = bus_fd;
 	dev->address = address;
 
-	dev->measurementRefreshIntervalUsec	= 1000;
+	dev->measurementRefreshIntervalUsec	= 200000;
 	dev->lastRefresh = 0;
 	dev->isRunningMode = 0;
 	dev->maxElectrodeToTrack = numElectrodes;
@@ -429,7 +429,7 @@ void test_mpr121() {
 			
 
         }
-        usleep(100000);
+        usleep(50000);
     }
 
 }

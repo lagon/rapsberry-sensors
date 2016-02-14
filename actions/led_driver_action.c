@@ -6,6 +6,7 @@
 #include "pattern_queue.h"
 #include "all_led_patterns.h"
 #include <stdarg.h>
+#include "mpr121_action.h"
 
 const char *ledDriverActionName = "LedDriveAction";
 const int numLeds = 36;
@@ -17,9 +18,17 @@ struct allSensorsDescription_t ledDriver_allSensors = {
 
 struct actionReturnValue_t ledDriver_returnStructure;
 
+#define __APPEND_TOUCH_SENSOR_NAME(SENSOR_NAME, KEY_NAME) SENSOR_NAME KEY_NAME
+#define __TOUCH_SENSOR_NAME "On Cupboard"
+
 struct inputNotifications_t ledDrive_watchedInputs = {
-	.numInputsWatched = 2,
-	.watchedInputs = {"chodba_webInput", __keyboardInputName}
+	.numInputsWatched = 6,
+	.watchedInputs = {"chodba_webInput", 
+						__keyboardInputName, 
+						__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key1), 
+						__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key2), 
+						__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key3), 
+						__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key4)}
 };
 
 struct ledDriver_sensorStat {
@@ -27,6 +36,7 @@ struct ledDriver_sensorStat {
 	struct allLedControlStruct *ledctrl;
 	long long lastKBInputUpdate;
 	long long lastWebUpdate;
+	long long lastTouchSensorUpdate;
 	uint16_t currentBrightness;
 	struct pa_Queue *ledPatternsQueue;
 	char *sensorStateName;
@@ -100,7 +110,7 @@ struct inputNotifications_t* ledDriver_actionStateWatchedInputs() {
 	return &ledDrive_watchedInputs;
 }
 
-char *checkNewInput(char *inputName, long long lastSeenUpdate, GHashTable* allInputs) {
+char *checkNewStrInput(char *inputName, long long lastSeenUpdate, GHashTable* allInputs) {
 	struct inputValue_t *input = (struct inputValue_t *)g_hash_table_lookup(allInputs, inputName);
 	if (input == NULL) {
 		return NULL;
@@ -109,6 +119,17 @@ char *checkNewInput(char *inputName, long long lastSeenUpdate, GHashTable* allIn
 		return NULL;
 	}
 	return input->stringValue;
+}
+
+int *checkNewIntInput(char *inputName, long long lastSeenUpdate, GHashTable* allInputs) {
+	struct inputValue_t *input = (struct inputValue_t *)g_hash_table_lookup(allInputs, inputName);
+	if (input == NULL) {
+		return NULL;
+	}
+	if (input->valueMeasuredTimestamp <= lastSeenUpdate) {
+		return NULL;
+	}
+	return &(input->integerValue);
 }
 
 void setupLedPatternsToQueue(struct ledDriver_sensorStat *state, uint16_t initialBrightness, uint16_t targetBrightness, int numPatternsToAdd, ...) {
@@ -150,8 +171,13 @@ long long executePatternStep(struct ledDriver_sensorStat *state) {
 struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GHashTable* measurementOutput, GHashTable* allInputs) {
 	struct ledDriver_sensorStat *state = (struct ledDriver_sensorStat *) rawSensorState;
 
-	char *keyboardCmd = checkNewInput(__keyboardInputName, state->lastKBInputUpdate, allInputs);
-	char *webCmd      = checkNewInput("chodba_webInput",   state->lastWebUpdate, allInputs);
+	char *keyboardCmd = checkNewStrInput(__keyboardInputName, state->lastKBInputUpdate, allInputs);
+	char *webCmd      = checkNewStrInput("chodba_webInput",   state->lastWebUpdate, allInputs);
+	int *touchKey1   = checkNewIntInput(__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key1), state->lastTouchSensorUpdate, allInputs);
+	int *touchKey2   = checkNewIntInput(__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key2), state->lastTouchSensorUpdate, allInputs);
+	int *touchKey3   = checkNewIntInput(__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key3), state->lastTouchSensorUpdate, allInputs);
+	int *touchKey4   = checkNewIntInput(__APPEND_TOUCH_SENSOR_NAME(__TOUCH_SENSOR_NAME, __MPR_Key4), state->lastTouchSensorUpdate, allInputs);
+
 	uint16_t nextBrightness;
 
 	if ((keyboardCmd == NULL) && (webCmd == NULL)) {
@@ -196,7 +222,13 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 		state->lastWebUpdate = getCurrentUSecs();
 	}
 
-
+	if (touchKey1 != NULL) {
+		printf("Touch key 1 has changed\n");
+		if (*touchKey1 == 1) {
+			printf("Touch key 1 has been pressed\n");
+			setupLedPatternsToQueue(state, state->currentBrightness, 0xFFFF,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		}
+	}
 	long long nextExpectedPatternStepTime = executePatternStep(state);
 	setReturnStructureWithPatterns(&ledDriver_returnStructure, state, nextExpectedPatternStepTime);
 
@@ -229,3 +261,4 @@ struct actionDescriptorStructure_t ledDriverActionStructure = {
 	.destroyActionFunction  = &ledDriver_closeActionFunction
 };
 
+#undef __APPEND_TOUCH_SENSOR_NAME
