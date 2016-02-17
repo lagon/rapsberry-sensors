@@ -204,7 +204,7 @@ void el_executeAction(struct actionDescriptorStructure_t *action2Execute, struct
 //		DEBUGPRINT("\tAction %s wants to be called again in future.\n", sensorName);
 		aq_addAction(eventLoop->actionQueue, ret->usecsToNextInvocation, action2Execute);
 	}
-	printf("It took %lld us to execute action %s... ", stopTime - startTime, sensorName);
+	//printf("It took %lld us to execute action %s... \n", stopTime - startTime, sensorName);
 
 	return;
 }
@@ -289,6 +289,7 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 	while (el_wantStop == 0) {
 		int bytesRead = read(externalEventNotifierPipe, &ch, 1);
 		//printf("Bytes from notifier pipe: %d\n", bytesRead);
+		
 	 	if (bytesRead > 0) {
 			printf("*********************************************\nThere is an input waiting in BD\n*********************************************\n");
 			el_readExternalInputs(eventLoop);
@@ -312,7 +313,7 @@ void el_runEventLoop(struct mainEventLoopControl_t *eventLoop) {
 
 		if (!el_isAnyInputChangesWaiting(eventLoop)) {
 			long long usecsToNextAction = aq_usecsToNextAction(eventLoop->actionQueue);
-			printf(" no inputs -> sleeping for %'lld usec...\n", usecsToNextAction);
+//			printf(" no inputs -> sleeping for %'lld usec...\n", usecsToNextAction);
 
 			waitingTime.tv_usec = usecsToNextAction;
 			waitingTime.tv_sec = 0;

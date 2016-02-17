@@ -19,7 +19,7 @@ struct allSensorsDescription_t ledDriver_allSensors = {
 struct actionReturnValue_t ledDriver_returnStructure;
 
 #define __APPEND_TOUCH_SENSOR_NAME(SENSOR_NAME, KEY_NAME) SENSOR_NAME KEY_NAME
-#define __TOUCH_SENSOR_NAME "On Cupboard"
+#define __TOUCH_SENSOR_NAME "MPR121On Cupboard"
 
 struct inputNotifications_t ledDrive_watchedInputs = {
 	.numInputsWatched = 6,
@@ -48,13 +48,18 @@ void setReturnStructure(struct actionReturnValue_t *returnStructure, struct ledD
 
 void setLedsAccordingToPattern(struct allLedControlStruct *ledctrl, struct pa_LedStatesResults *pattern) {
 	for (int ledID = 0; ledID < pattern->totalLeds; ledID++) {
-		printf(" ** %X", pattern->ledIntensities[ledID]);
+//		printf(" ** %X", pattern->ledIntensities[ledID]);
 		setOneGrayscaleLed(ledctrl, ledID, pattern->ledIntensities[ledID]);
 	}
-	printf("\n");
+//	printf("\n");
 }
 
 struct actionReturnValue_t* ledDriver_initActionFunction(char *nameAppendix, char *address) {
+	printf("Watching for inputs:\n");
+	for (int i = 0; i < ledDrive_watchedInputs.numInputsWatched; i++) {
+		printf("\t * %s\n", ledDrive_watchedInputs.watchedInputs[i]);
+	}
+
 	int spidev = spi_initDevice(0, 0);
 	if (spidev < 0) {
 		perror("");
@@ -180,7 +185,9 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 
 	uint16_t nextBrightness;
 
-	if ((keyboardCmd == NULL) && (webCmd == NULL)) {
+	if ((keyboardCmd == NULL) && (webCmd == NULL) 
+		&& (touchKey1 == NULL) && (touchKey2 == NULL)
+		&& (touchKey3 == NULL) && (touchKey4 == NULL)) {
 		if (pa_isQueueEmpty(state->ledPatternsQueue)) {
 			setReturnStructure(&ledDriver_returnStructure, state);
 		}  else {
@@ -222,13 +229,24 @@ struct actionReturnValue_t* ledDriver_actionFunction(gpointer rawSensorState, GH
 		state->lastWebUpdate = getCurrentUSecs();
 	}
 
-	if (touchKey1 != NULL) {
-		printf("Touch key 1 has changed\n");
-		if (*touchKey1 == 1) {
-			printf("Touch key 1 has been pressed\n");
-			setupLedPatternsToQueue(state, state->currentBrightness, 0xFFFF,  3, &ledPattern_acknowledgeCommand, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
-		}
+	if ((touchKey1 != NULL) && (*touchKey1 == 1)) {
+		setupLedPatternsToQueue(state, state->currentBrightness, 0xFFFF,  2, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		state->lastTouchSensorUpdate = getCurrentUSecs();
 	}
+	if ((touchKey2 != NULL) && (*touchKey2 == 1)) {
+		setupLedPatternsToQueue(state, state->currentBrightness, 0x0000,  2, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		state->lastTouchSensorUpdate = getCurrentUSecs();
+	}
+	if ((touchKey3 != NULL) && (*touchKey3 == 1)) {
+		setupLedPatternsToQueue(state, state->currentBrightness, 0x0000,  4, &ledPattern_acknowledgeCommand, &ledPattern_fiveMinuteDelay, &ledPattern_setIntensityMediumFade, &ledPattern_setIntensityInOneStep);
+		state->lastTouchSensorUpdate = getCurrentUSecs();
+	}
+	if ((touchKey4 != NULL) && (*touchKey4 == 1)) {
+		setupLedPatternsToQueue(state, state->currentBrightness, 0x0000,  1, &ledPattern_nightMode);
+		state->lastTouchSensorUpdate = getCurrentUSecs();
+	}
+
+
 	long long nextExpectedPatternStepTime = executePatternStep(state);
 	setReturnStructureWithPatterns(&ledDriver_returnStructure, state, nextExpectedPatternStepTime);
 

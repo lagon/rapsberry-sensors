@@ -24,16 +24,12 @@
 
 
 
-const char *mpr121_keyNames[] = {__MPR_Key1,  __MPR_Key2,  __MPR_Key3,
-						  		 __MPR_Key4,  __MPR_Key5,  __MPR_Key6,
-						    	 __MPR_Key7,  __MPR_Key8,  __MPR_Key9,
-						  		 __MPR_Key10, __MPR_Key11, __MPR_Key12,
-						  		 __MPR_KeyProximity};
+extern const char *mpr121_keyNames[];
 
 extern const char* mpr121TouchSensorName;
 extern const char* mpr121TouchSensorStateName;
 
-extern struct actionDescriptorStructure_t mcp9808ActionStructure;
+extern struct actionDescriptorStructure_t mpr121ActionStructure;
 
 #endif
 

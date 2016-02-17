@@ -139,7 +139,7 @@ void sendOutLedData(struct allLedControlStruct *ledStructure, const int spi_devi
 	for (int i = 0; i < ledStructure->numLeds; i = i + 4) {
 		constructPacketRGB(ledStructure->settings, ledStructure->brightness, ledStructure->individualLeds + i, outputMsg + i * 7);
 	}
-	printHexBuffer(outputMsg, msgSize);
+	//printHexBuffer(outputMsg, msgSize);
 	spi_duplexTransfer(spi_device, outputMsg, inputMsg, 28 * (ledStructure->numLeds / 4), speed, bits_per_word, cs_change_at_end);
 
 	free(outputMsg);

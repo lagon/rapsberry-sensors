@@ -20,15 +20,16 @@
 #include "mcp9808_action.h"
 #include "kbInput_action.h"
 #include "led_driver_action.h"
+#include "mpr121_action.h"
 #include "sensorConfigParser.h"
 
-#include "mpr121.h"
 
 // EXPERIMENTAL --------- 
 // #include "led_experiments.h"
 // #include "ina219_power_monitor.h"
 //#include "ssd1306_oled_display.h"
-#include "mtk3339-gps.h"
+//#include "mtk3339-gps.h"
+//#include "mpr121.h"
 
 struct mainEventLoopControl_t* mainEventLoop;
 
@@ -45,6 +46,7 @@ GHashTable *getAllAvailableActions() {
     g_hash_table_replace(allAvailableActions, kbInputActionStructure.sensorType,   &kbInputActionStructure);
     g_hash_table_replace(allAvailableActions, ledDriverActionStructure.sensorType, &ledDriverActionStructure);
     g_hash_table_replace(allAvailableActions, save2SqlActionStructure.sensorType,  &save2SqlActionStructure);
+    g_hash_table_replace(allAvailableActions, mpr121ActionStructure.sensorType,    &mpr121ActionStructure);
 
     return allAvailableActions;
 }

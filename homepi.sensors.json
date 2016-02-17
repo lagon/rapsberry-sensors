@@ -6,6 +6,7 @@
 	{"SensorType" : "MCP9808",        "Name" : " On Cupboard", "SensorAddress" : "0x18"},
 	{"SensorType" : "MCP9808",        "Name" : " Under Table", "SensorAddress" : "0x1c"},
 	{"SensorType" : "DisplayPrint",   "Name" : "",             "SensorAddress" : "-1"},
-	{"SensorType" : "SQLLiteStorage", "Name" : "",             "SensorAddress" : "-1"},	
-	{"SensorType" : "MPR121",         "Name" : "On Cupboard",  "SensorAddress" : "0x5A"},		
+	{"SensorType" : "SQLLiteStorage", "Name" : "",             "SensorAddress" : "-1"},
+	{"SensorType" : "MPR121",         "Name" : "On Cupboard",  "SensorAddress" : "0x5A"},
+	{"SensorType" : "KBINPUT",        "Name" : "",             "SensorAddress" : "-1"},
 ]

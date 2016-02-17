@@ -8,7 +8,8 @@ OBJS=actions/h21df_action.o \
 		actions/ina219_action.o \
 		actions/mcp9808_action.o \
 		actions/kbInput_action.o \
-		actions/led_driver_action.o
+		actions/led_driver_action.o \
+		actions/mpr121_action.o
 
 %.o: %.c
 		$(CC) $(CFLAGS) -c -o $@ $<

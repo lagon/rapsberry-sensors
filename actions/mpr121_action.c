@@ -1,7 +1,14 @@
 #include <mpr121_action.h>
 #include <mpr121.h>
+#include <stdlib.h>
 #include "actionQueue.h"
 #include "actionDescriptorStructure.h"
+
+ const char *mpr121_keyNames[] = {__MPR_Key1,  __MPR_Key2,  __MPR_Key3,
+						  		 __MPR_Key4,  __MPR_Key5,  __MPR_Key6,
+						    	 __MPR_Key7,  __MPR_Key8,  __MPR_Key9,
+						  		 __MPR_Key10, __MPR_Key11, __MPR_Key12,
+						  		 __MPR_KeyProximity};
 
 struct mpr121_sensorStat {
 	struct mpr121_device *device;
@@ -13,12 +20,15 @@ struct mpr121_sensorStat {
 
 struct allSensorsDescription_t mpr121_noSensors = {
 	.numSensors = 0,
-	.sensorDescriptions = NULL
+	.sensorDescriptions = {}
 };
+
+const char* mpr121TouchSensorName = "MPR121";
+const char* mpr121TouchSensorStateName = "MPR121";
 
 struct actionReturnValue_t mpr121_returnStructure;
 
-long long mpr121_touchSensorTimeInterval = 500 * 1000 * 1000;
+long long mpr121_touchSensorTimeInterval = 100 * 1000;
 
 struct actionReturnValue_t *mpr121_initActionFunction(char *nameAppendix, char *address) {
 	struct mpr121_sensorStat *sensor = (struct mpr121_sensorStat *) malloc(sizeof(struct mpr121_sensorStat));
@@ -51,30 +61,46 @@ struct actionReturnValue_t *mpr121_initActionFunction(char *nameAppendix, char *
 }
 
 void updateKeysPressed(struct mpr121_device *device, uint8_t keys[13]) {
+	mpr121_isElectrodeTouched(device, 0);
+	while (device->isRunningMode != 1) {
+        printf("mpr121 in stop mode. Enabling...");
+        //mpr121_resetAndSetup(dev);
+        if (mpr121_putToRunningMode(device) > 0) {
+            printf("up & running\n");
+        } else {
+	        printf("down and stop for some reason\n");
+        }
+        mpr121_isElectrodeTouched(device, 0);
+    }
 	for (uint8_t i = 0; i < 13; i++) {
 		keys[i] = mpr121_isElectrodeTouched(device, i);
+		// printf("%c", keys[i] == 0 ? ' ' : 'X');
 	}
+	// printf("\n");
 }
 
 struct inputsChanged_t *generateChangedInputs(struct mpr121_sensorStat *mpr121, uint8_t actualKeys[13]) {
-	struct inputsChanged_t *x;
 	int changedKeys = 0;
 	for (int i = 0; i < 13; i++) {
-		if ((actualKeys[i] != mpr121->keysPressed[i]) || (actualKeys[i] == 1)) {
-			changedKeys++
+		if ((actualKeys[i] != mpr121->keysPressed[i])) {
+			changedKeys++;
 		}
 	}
+	// printf("Number of keys changed %d\n", changedKeys);
 	if (changedKeys == 0) {
 		return generateNoInputsChanged();
 	} else {
 		struct inputsChanged_t *keysInput = (struct inputsChanged_t*) malloc(sizeof(struct inputsChanged_t) + sizeof(struct inputValue_t) * changedKeys);
+		keysInput->numInputsChanged = changedKeys;
 		int changedInputId = 0;
 		for (int i = 0; i < 13; i++) {
-			if ((actualKeys[i] != mpr121->keysPressed[i]) || (actualKeys[i] == 1)) {
-				keysInput->newInputValues[changedInputId].inputName = allocateAndConcatStrings(mpr121->sensorName, keyNames[i]);
+			if ((actualKeys[i] != mpr121->keysPressed[i])) {
+				keysInput->newInputValues[changedInputId].inputName = allocateAndConcatStrings(mpr121->sensorName, mpr121_keyNames[i]);
 				keysInput->newInputValues[changedInputId].valueMeasuredTimestamp = getCurrentUSecs();
 				keysInput->newInputValues[changedInputId].type = InputTypeInteger;
 				keysInput->newInputValues[changedInputId].integerValue = actualKeys[i];
+				// printf("**** %s\n", allocateAndConcatStrings(mpr121->sensorName, mpr121_keyNames[i]));
+				printf("Touch %d (%s) - changed to state %d\n", i, keysInput->newInputValues[changedInputId].inputName, keysInput->newInputValues[changedInputId].integerValue);
 				changedInputId++;
 			}
 		}
@@ -92,11 +118,15 @@ struct actionReturnValue_t* mpr121_actionFunction(gpointer mpr121SensorStat, GHa
 	struct mpr121_sensorStat *mpr121 = (struct mpr121_sensorStat *)mpr121SensorStat;
 
 	uint8_t actualKeys[13];
-	updateKeysPressed(mpr121, actualKeys);
+	// printf("Updating keys\n");
+	updateKeysPressed(mpr121->device, actualKeys);
+	// printf("Generating changed inputs (if any)\n");
 	struct inputsChanged_t *keysInput = generateChangedInputs(mpr121, actualKeys);
+	// printf("Storing current keys\n");
 	replacePressedKeysWithActualValues(mpr121, actualKeys);
+	// printf("Generating return structure\n");
 
-	mpr121_returnStructure.sensorState = sensor;
+	mpr121_returnStructure.sensorState = mpr121;
 	mpr121_returnStructure.usecsToNextInvocation = mpr121_touchSensorTimeInterval;
 	mpr121_returnStructure.actionErrorStatus = 0;
 	mpr121_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;

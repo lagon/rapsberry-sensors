@@ -317,7 +317,7 @@ int mpr121_putToRunningMode(struct mpr121_device *dev) {
 		uint8_t outData = 0x80;
 		outData = outData | ((dev->proximitySensorSize & 0x03) << 4);
 		outData = outData | (maxEle & 0x0F);
-		printf("%0X\n", outData);
+		printf("0x%0X\n", outData);
 		if (i2c_write8bits(dev->bus_fd, dev->address, electrodeConfiguration_address, outData) < 0) {
 			return -1;
 		} // 0011 1111
