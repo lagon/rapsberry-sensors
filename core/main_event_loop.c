@@ -17,6 +17,7 @@ struct actionDescriptorStructure_t *allocateAndCopyActionDescriptionStructure(st
 }
 
 void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop, struct actionDescriptorStructure_t *sensor, struct sensorConfig_t *cfg) {
+	printf("Sensor of type %s is initating.\n", sensor->sensorType);
 	struct actionReturnValue_t* initReturn = sensor->initiateActionFunction(cfg->sensorNameAppendix, cfg->sensorAddress);
 	if (initReturn->actionErrorStatus != 0) {
 		char *str = allocateAndConcatStrings(sensor->sensorType, cfg->sensorNameAppendix);
@@ -29,7 +30,7 @@ void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop,
 	char *sensorName = (char *)malloc(sizeof(char) * (strlen(sensorNameOriginal) + 10));
 	sensorName = strcpy(sensorName, sensorNameOriginal);
 	
-	printf("Sensor %s initating.\n", sensorName);
+	printf("Sensor is registered as %s.\n", sensorName);
 
 	g_hash_table_replace(eventLoop->allActionsRegistry, sensorName, sensor);
 
