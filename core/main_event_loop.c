@@ -194,9 +194,9 @@ void el_executeAction(struct actionDescriptorStructure_t *action2Execute, struct
 		return;
 	}
 
-	long long startTime = getCurrentUSecs();
+	//long long startTime = getCurrentUSecs();
 	struct actionReturnValue_t *ret = action2Execute->actionFunction(sensorState, eventLoop->allSensorValues, eventLoop->inputValues);
-	long long stopTime = getCurrentUSecs();
+	//long long stopTime = getCurrentUSecs();
 	g_hash_table_replace(eventLoop->allActionsStatuses, sensorName, ret->sensorState);
 
 	el_registerChangedInputs(eventLoop->changedInputValues, ret->changedInputs);

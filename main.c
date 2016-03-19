@@ -30,6 +30,7 @@
 //#include "ssd1306_oled_display.h"
 //#include "mtk3339-gps.h"
 //#include "mpr121.h"
+#include "tsl2591_luminosity.h"
 
 struct mainEventLoopControl_t* mainEventLoop;
 
@@ -61,15 +62,14 @@ void initialize(const char *configurationFile) {
 }
 
 int main(int argc, char **argv) {
+    tsl2591_testMeasurement();
+
     if (argc != 2) {
         printf("Usage is %s <configuration file>.json\n", argv[0]);
         return -1;
     }
     //Syslog start
     openlog("sensor controller", LOG_CONS | LOG_PERROR, LOG_USER);
-
-
-//    test_mpr121();
     
     initialize(argv[1]);
     el_runEventLoop(mainEventLoop);
