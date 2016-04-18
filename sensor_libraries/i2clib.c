@@ -1,8 +1,9 @@
 #include "i2clib.h"
 #include <linux/i2c-dev.h>
 
-//#define I2CDATAPRINT(op, busAddr, reg, data) printf("%s address 0x%0X register 0x%0X data 0x%0X\n", op, busAddr, reg, data);
-#define I2CDATAPRINT(op, busAddr, reg, data)
+#define I2CDATAPRINT(op, busAddr, reg, data) printf("%s address 0x%0X register 0x%0X data 0x%0X\n", op, busAddr, reg, data);
+//#define I2CDATAPRINT(op, busAddr, reg, data)
+#define I2CBULKDATAPRINT(op, busAddr, data, len) printf("%s, address: 0x%0X ", op, busAddr); for (int __i2cI = 0; __i2cI < len; __i2cI++) { printf(" 0x%0X", ((uint8_t *)data)[__i2cI]);}; printf("\n");
 
 int i2c_initDevice(int bus_id) {
     char *busName;
@@ -48,7 +49,7 @@ void printHexDump(char *op, uint8_t addr, void *data, uint8_t length) {
 
 int i2c_writeToDevice(int fd, uint8_t address, void *data, uint8_t length) {
     selectDevice(fd, address);
-    //printHexDump("Write", address, data, length);
+    I2CBULKDATAPRINT("Write", address, data, length);
     int written = write(fd, data, length);
     return written;
 }
@@ -56,7 +57,7 @@ int i2c_writeToDevice(int fd, uint8_t address, void *data, uint8_t length) {
 int i2c_readFromDevice(int fd, uint8_t address, void *data, uint8_t length) {
     selectDevice(fd, address);
     int readBytes = read(fd, data, length);
-    //printHexDump("Read", address, data, readBytes);
+    I2CBULKDATAPRINT("Read", address, data, length);
     return readBytes;    
 }
 
