@@ -56,7 +56,7 @@ void setTerminalNonBlockMode(int state) {
     tcsetattr(stdinFileID, TCSANOW, &ttystate);
 }
 
-struct actionReturnValue_t* kbInput_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t* kbInput_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct kbInputSensorState_t * sensorState = (struct kbInputSensorState_t *) malloc(sizeof(struct kbInputSensorState_t));
 	sensorState->sensorStateName = allocateAndConcatStrings(kbInput_actionName, nameAppendix);
 	sensorState->lastChar = (char *)malloc(sizeof(char));

@@ -54,7 +54,7 @@ void setLedsAccordingToPattern(struct allLedControlStruct *ledctrl, struct pa_Le
 //	printf("\n");
 }
 
-struct actionReturnValue_t* ledDriver_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t* ledDriver_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	printf("Watching for inputs:\n");
 	for (int i = 0; i < ledDrive_watchedInputs.numInputsWatched; i++) {
 		printf("\t * %s\n", ledDrive_watchedInputs.watchedInputs[i]);

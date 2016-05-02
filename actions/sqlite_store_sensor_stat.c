@@ -31,7 +31,7 @@ struct sqlStatusActionStatus {
 
 static const char *sqlInsertSensorDataStatement = "INSERT INTO sensorStats (sensorID, sensorDisplayName, measurementTime, sensorValue) values (?, ?, ?, ?);";
 
-struct actionReturnValue_t *sqliteStore_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t *sqliteStore_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct sqlStatusActionStatus *sql = (struct sqlStatusActionStatus*) malloc(sizeof(sqlStatusActionStatus));
 //	prepare_db_file(sqlite_filename);
 	sqliteSave_returnStructure.sensorState = sql;

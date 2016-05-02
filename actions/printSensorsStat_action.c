@@ -22,7 +22,7 @@ struct allSensorsDescription_t print_allSensors = {
 	.sensorDescriptions = {}
 };
 
-struct actionReturnValue_t *print_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t *print_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct printActionStatus *stat = (struct printActionStatus *)malloc(sizeof(struct printActionStatus));
 	stat->last_printout = getCurrentUSecs();
 	stat->sensorStateName = allocateAndConcatStrings(printSensorStatusName, nameAppendix);
