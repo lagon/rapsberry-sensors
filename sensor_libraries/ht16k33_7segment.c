@@ -94,6 +94,9 @@ int ht16k337Seg_printAscii(struct ht16k33_7Segment *device, uint8_t pos, uint8_t
 
 int ht16k337Seg_setPeriod(struct ht16k33_7Segment *device, uint8_t isShowing, uint8_t pos) {
 	uint16_t value;
+	if (pos >= 2) {
+		pos++;
+	}
 	int ret = ht16k33_getBufferPosition(device->device, pos, &value);
 	if (ret < 0) {return ret;}
 	if (isShowing != 0) {
@@ -131,7 +134,8 @@ int ht16k337Seg_printStr(struct ht16k33_7Segment *device, char *string) {
 }
 
 char * ht16k337Seg_intTo4Chars(int value) {
-	char *str = malloc(sizeof(char) * 4);
+	char *str = malloc(sizeof(char) * 5);
+	memset(str, 0, sizeof(char) * 5);
 	if ((value < 0) || (value > 9999)) {
 		strncpy(str, "XXXX", 4);
 		return str;
@@ -139,7 +143,7 @@ char * ht16k337Seg_intTo4Chars(int value) {
 	for (int pos = 0; pos < 4; pos++) {
 		int rem = value % 10;
 		value = value / 10;
-		str[4 - pos] = _digits[rem + 48];
+		str[3 - pos] = rem + 48;
 	}
 	return str;
 }
@@ -153,20 +157,21 @@ int ht16k337Seg_printInteger(struct ht16k33_7Segment *device, int value) {
 
 int ht16k337Seg_printDouble(struct ht16k33_7Segment *device, double value) {
 	char *str = malloc(sizeof(char) * 4);
-	int decimalPt = 3;
+	int decimalPt = 0;
 
-	if ((value < 0.0001) || (value > 9999)) {
+	if ((value < 0.0) || (value > 9999.0)) {
 		strncpy(str, "XXXX", 4);
 	} else {
-		if (value >= 1) {
-			decimalPt = 2;
-		} else if (value >= 10) {
+		if ((value >= 10) && (value < 100))  {
 			decimalPt = 1;
-		} else if (value >= 100) {
-			decimalPt = 0;
+		} else if ((value >= 100) && (value < 1000)) {
+			decimalPt = 2;
+		} else if (value >= 1000) {
+			decimalPt = 3;
 		}
 		int value10 = (int) round(exp10(3.0 - (double)decimalPt) * (double)value);
 		str = ht16k337Seg_intTo4Chars(value10);
+		printf("%g -> %d - %d - %s\n", value, value10, decimalPt, str);
 	}
 
 	ht16k337Seg_printStrInternal(device, str);
@@ -215,6 +220,23 @@ void ht16k337Seg_testDisplay() {
 	ht16k337Seg_setBrightness(dev, 15);
 
 	char *str = "890X";
-	ht16k337Seg_printStr(dev, str);	
+	ht16k337Seg_printStr(dev, str);
+	sleep(1);
+	
+	for (int i = 1; i < 1000; i++) {
+		ht16k337Seg_printDouble(dev, ((double)i) / 1000.0);
+		usleep(1000);
+	}
+	for (int i = 100; i < 1000; i++) {
+		ht16k337Seg_printDouble(dev, ((double)i) / 100.0);
+		usleep(1000);
+	}
+	for (int i = 100; i < 10000; i++) {
+		ht16k337Seg_printDouble(dev, ((double)i) / 1.0);
+		usleep(1000);
+	}
+
+	ht16k337Seg_turnOff(dev);
+	ht16k337Seg_powerOff(dev);
 
 }

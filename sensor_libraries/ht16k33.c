@@ -73,7 +73,7 @@ int ht16k33_setBufferPosition(struct ht16k33Device *device, uint8_t position, ui
 	if (position >= (_ht16k33_bufferSize * 2)) {
 		return -1;
 	}
-	printf("%d == 0x%02X 0x%02X (was 0x%04X)\n", position, (uint8_t) ((value & 0xFF00) >> 8), (uint8_t) (value & 0x00FF), value);
+	//printf("%d == 0x%02X 0x%02X (was 0x%04X)\n", position, (uint8_t) ((value & 0xFF00) >> 8), (uint8_t) (value & 0x00FF), value);
 	device->buffer[(2 * position) + 2] = (uint8_t) ((value & 0xFF00) >> 8);
 	device->buffer[(2 * position) + 1] = (uint8_t) (value & 0x00FF);
 	return 1;
