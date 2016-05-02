@@ -102,7 +102,7 @@ struct actionReturnValue_t* kbInput_actionFunction(gpointer rawSensorStatus, GHa
 	if (isKbHit()) {
 		char ch;
 		char buffer[1024];
-		printf("Readin...\n");
+		printf("Reading...\n");
 		int readBytes = read(stdinFileID, buffer, 1024);
 		printf("Chars read from keyboard %d\n", readBytes);
 		ch = buffer[readBytes-1];
