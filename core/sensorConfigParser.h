@@ -7,6 +7,7 @@ struct sensorConfig_t {
 	char *sensorType;
 	char *sensorNameAppendix;
 	char *sensorAddress;
+	char *sensorOptions;
 } sensorConfig_t;
 
 GList *readConfigurationFile(const char* filename);
