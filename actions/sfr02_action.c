@@ -38,7 +38,7 @@ struct allSensorsDescription_t sfr02_allSensors = {
 
 struct actionReturnValue_t sfr02_returnStructure;
 
-struct actionReturnValue_t* sfr02_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t* sfr02_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct sfr02SensorState_t *sensor = (struct sfr02SensorState_t *) malloc(sizeof(struct sfr02SensorState_t));
 	char *x;
 	uint8_t addr = strtol(address, &x, 16);
@@ -144,7 +144,7 @@ void sfr02_closeActionFunction(void *sensorStatus) {
 }
 
 struct actionDescriptorStructure_t sfr02ActionStructure = {
-	.sensorType = "SFR02",
+	.sensorType = __SFR02RangeSensorName,
 	.sensorStatePtr = NULL,
 	.initiateActionFunction = &sfr02_initActionFunction,
 	.actionFunction = &sfr02_actionFunction,

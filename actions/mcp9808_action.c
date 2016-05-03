@@ -38,7 +38,7 @@ struct allSensorsDescription_t mcp9808_allSensors = {
 
 struct actionReturnValue_t mcp9808_returnStructure;
 
-struct actionReturnValue_t *mcp9808_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t *mcp9808_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct mcp9808_sensorStat *sensor = (struct mcp9808_sensorStat *) malloc(sizeof(struct mcp9808_sensorStat));
 
 	char *x;

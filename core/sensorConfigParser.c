@@ -60,7 +60,7 @@ GList *readConfigurationFile(const char* filename) {
 	}
 	
 	GList *allSensorCfg = NULL;
-	for (int i = 2; i < tokensParsed; i = i + 7) {
+	for (int i = 2; i < tokensParsed; i = i + 9) {
 		printf("Processing token %d - type %d\n", i, tokens[i].type);
 		if (tokens[i].type != JSMN_OBJECT) {
 			logErrorMessage("Configuration token is not an object%s", "");
@@ -72,17 +72,22 @@ GList *readConfigurationFile(const char* filename) {
 			(tokens[i+3].type != JSMN_STRING) ||
 			(tokens[i+4].type != JSMN_STRING) ||
 			(tokens[i+5].type != JSMN_STRING) ||
-			(tokens[i+6].type != JSMN_STRING)) {
+			(tokens[i+6].type != JSMN_STRING) ||
+			(tokens[i+7].type != JSMN_STRING) ||
+			(tokens[i+8].type != JSMN_STRING)) {
 			logErrorMessage("Configuration for one sensor may consist only of strings. No embedded structures allowed.%s", "");
 			return NULL;
 		}
 
-		char * sensorTypeStr   = extractStringFromJson(configutation, tokens[i+1]);
-		char * sensorTypeValue = extractStringFromJson(configutation, tokens[i+2]);
-		char * nameStr         = extractStringFromJson(configutation, tokens[i+3]);
-		char * nameValue       = extractStringFromJson(configutation, tokens[i+4]);
-		char * sensorAddrStr   = extractStringFromJson(configutation, tokens[i+5]);
-		char * sensorAddrValue = extractStringFromJson(configutation, tokens[i+6]);
+		char * sensorTypeStr     = extractStringFromJson(configutation, tokens[i+1]);
+		char * sensorTypeValue   = extractStringFromJson(configutation, tokens[i+2]);
+		char * nameStr           = extractStringFromJson(configutation, tokens[i+3]);
+		char * nameValue         = extractStringFromJson(configutation, tokens[i+4]);
+		char * sensorAddrStr     = extractStringFromJson(configutation, tokens[i+5]);
+		char * sensorAddrValue   = extractStringFromJson(configutation, tokens[i+6]);
+		char * sensorOptionStr   = extractStringFromJson(configutation, tokens[i+7]);
+		char * sensorOptionValue = extractStringFromJson(configutation, tokens[i+8]);
+
 
 		if (strcmp(sensorTypeStr, "SensorType") != 0) {
 			logErrorMessage("Options in configutation file has to be in strict order. First field has to be SensorType, but %s was found.", sensorTypeStr);
@@ -96,10 +101,16 @@ GList *readConfigurationFile(const char* filename) {
 			logErrorMessage("Options in configutation file has to be in strict order. Third field has to be SensorAddress, but %s was found.", sensorAddrStr);
 			return NULL;
 		}
+		if (strcmp(sensorOptionStr, "SensorOptions") != 0) {
+			logErrorMessage("Options in configutation file has to be in strict order. Fourth field has to be SensorOptions, but %s was found.", sensorOptionStr);
+			return NULL;
+		}
+
 		struct sensorConfig_t *singleSensor = (struct sensorConfig_t *) malloc(sizeof(struct sensorConfig_t));
 		singleSensor->sensorType = sensorTypeValue;
 		singleSensor->sensorNameAppendix = nameValue;
 		singleSensor->sensorAddress = sensorAddrValue;
+		singleSensor->sensorOptions = sensorOptionValue;
 		printf("Added following sensor type: %s - name appendix %s - address (if required) %s\n", sensorTypeValue, nameValue, sensorAddrValue);
 		allSensorCfg = g_list_append(allSensorCfg, (gpointer) singleSensor);
 	}

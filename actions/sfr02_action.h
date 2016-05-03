@@ -5,8 +5,7 @@
 #include "actionDescriptorStructure.h"
 #include "sensorDescriptionStructure.h"
 
-const extern long _measurement_offset;
-extern struct actionDescriptorStructure_t h21dfActionStructure;
+extern struct actionDescriptorStructure_t sfr02ActionStructure;
 
 extern const char* sfr02RangeSensorName;
 

@@ -32,7 +32,7 @@ struct allSensorsDescription_t bmp183_allSensors = {
 
 struct actionReturnValue_t bmp183_returnStructure;
 
-struct actionReturnValue_t* bmp183_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t* bmp183_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	bmp183_returnStructure.usecsToNextInvocation = bmp183_PressureSensorRefresh;
 	bmp183_returnStructure.waitOnInputMode = WAIT_TIME_PERIOD;
 	bmp183_returnStructure.changedInputs = generateNoInputsChanged();

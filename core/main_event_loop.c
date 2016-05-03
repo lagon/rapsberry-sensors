@@ -18,7 +18,7 @@ struct actionDescriptorStructure_t *allocateAndCopyActionDescriptionStructure(st
 
 void registerAndInitializeSingleSensor(struct mainEventLoopControl_t *eventLoop, struct actionDescriptorStructure_t *sensor, struct sensorConfig_t *cfg) {
 	printf("Sensor of type %s is initating.\n", sensor->sensorType);
-	struct actionReturnValue_t* initReturn = sensor->initiateActionFunction(cfg->sensorNameAppendix, cfg->sensorAddress);
+	struct actionReturnValue_t* initReturn = sensor->initiateActionFunction(cfg->sensorNameAppendix, cfg->sensorAddress, cfg->sensorOptions);
 	if (initReturn->actionErrorStatus != 0) {
 		char *str = allocateAndConcatStrings(sensor->sensorType, cfg->sensorNameAppendix);
 		logErrorMessage("Unable to initiate sensor %s. Check previous messages for errors.", str);

@@ -30,7 +30,7 @@ struct actionReturnValue_t mpr121_returnStructure;
 
 long long mpr121_touchSensorTimeInterval = 100 * 1000;
 
-struct actionReturnValue_t *mpr121_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t *mpr121_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct mpr121_sensorStat *sensor = (struct mpr121_sensorStat *) malloc(sizeof(struct mpr121_sensorStat));
 	memset(sensor->keysPressed, 0, 13);
 

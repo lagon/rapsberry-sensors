@@ -38,7 +38,7 @@ struct allSensorsDescription_t h21df_allSensors = {
 
 struct actionReturnValue_t h21df_returnStructure;
 
-struct actionReturnValue_t* h21df_initActionFunction(char *nameAppendix, char *address) {
+struct actionReturnValue_t* h21df_initActionFunction(char *nameAppendix, char *address, char *sensorOptions) {
 	struct h21dfDevice *dev = h21DF_init(1);
 	if (dev == NULL) {
 		syslog(LOG_ERR, "Unable to initiate h21df humidity sensor.");
